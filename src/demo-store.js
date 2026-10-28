@@ -1,4 +1,6 @@
+import { createInitialAccounts } from "./accounts-model.js";
 export const demoStore = {
+  accounts: createInitialAccounts(),
   products: [
     { sku:'OXF-BLK-XL', name:'Kemeja Oxford', size:'XL', color:'Hitam', purchasePrice:85000, sellingPrice:125000, unit:'lusin', notes:'Contoh produk garment' },
     { sku:'TSH-WHT-M', name:'Kaos Basic', size:'M', color:'Putih', purchasePrice:35000, sellingPrice:59000, unit:'kodi', notes:'' },
