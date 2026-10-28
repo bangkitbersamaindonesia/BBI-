@@ -21,6 +21,12 @@ function period(type,today){
   return [dateUTC(y,m,d),today];
 }
 function prevYear(d){return dateUTC(d.getUTCFullYear()-1,d.getUTCMonth(),Math.min(d.getUTCDate(),new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate()));}
+// Year-over-year: week uses 52-week alignment (same weekdays), other presets
+// compare matching calendar dates last year. The date range is inclusive.
+function priorComparableRange(type,start,end){
+  if(type==="week") return [addDays(start,-364),addDays(end,-364)];
+  return [prevYear(start),prevYear(end)];
+}
 function dailyValue(d){
   // Stable, invented demo values: source is date only, no backend or actual ledger data.
   const t=Math.floor(d.getTime()/day);
@@ -62,13 +68,13 @@ export function mountDashboardAnalytics(){
       $("#selected-range").textContent="Rentang tanggal tidak valid. Pastikan tanggal awal tidak melebihi tanggal akhir.";
       $("#net-profit-chart").replaceChildren();$("#net-profit-total").textContent="—";return;
     }
-    const previous=compare.checked?[prevYear(start),prevYear(end)]:null;
+    const previous=compare.checked?priorComparableRange(preset.value,start,end):null;
     const currentBuckets=buckets(start,end);
     const lastBuckets=previous?buckets(...previous):null;
     const sum=(a)=>a.reduce((t,x)=>t+x.value,0);
     const currentTotal=sum(currentBuckets),previousTotal=lastBuckets?sum(lastBuckets):null;
-    $("#selected-range").textContent="Periode: "+fmtDate.format(start)+" – "+fmtDate.format(end)+(previous?" | Tahun lalu: "+fmtDate.format(previous[0])+" – "+fmtDate.format(previous[1]):"")+" · Tahun fiskal diasumsikan Jan–Des";
-    $("#net-profit-total").textContent=fmtMoney.format(currentTotal);
+    $("#selected-range").textContent="Periode: "+fmtDate.format(start)+" – "+fmtDate.format(end)+(previous?" | Periode sama tahun lalu: "+fmtDate.format(previous[0])+" – "+fmtDate.format(previous[1]):"")+" · Tahun fiskal diasumsikan Jan–Des";
+    $("#net-profit-total").textContent=fmtMoney.format(currentTotal)+(previousTotal===null?"":" | LY "+fmtMoney.format(previousTotal)+(previousTotal===0?"":" ("+((currentTotal-previousTotal)/Math.abs(previousTotal)*100).toFixed(1)+"% YoY)"));
     $("#last-year-legend").hidden=!compare.checked;
     $("#net-profit-chart").setAttribute("aria-label","Laba bersih ilustrasi "+fmtMoney.format(currentTotal)+(previousTotal===null?"":" dibanding "+fmtMoney.format(previousTotal)+" tahun lalu"));
     renderChart(currentBuckets,lastBuckets);
