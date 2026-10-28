@@ -6,8 +6,27 @@ const EXPENSE_CHILDREN={
  'Insurance Expenses':['General Liability Insurance','Health Insurance/BPJS'],
 };
 function initialExpenses(){return EXPENSE_NAMES.flatMap((name,index)=>{const id=`EXP-${String(index+1).padStart(3,'0')}`;const account={id,name,kind:'expense',group:'expense',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]};return [account,...(EXPENSE_CHILDREN[name]??[]).map((child,childIndex)=>({...account,id:`${id}-${childIndex+1}`,name:child,parentId:id,history:[]}))];});}
+function initialLiabilities(){
+ const base={kind:'other_liability',group:'other_liability',currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true};
+ const root={...base,id:'LIAB-001',name:'Loan Pinjaman',parentId:null,history:[]};
+ const children=['Fema rak promosi','tidak tahu siapa','Loan BN PAN','Loan Dan','Loan Her','Loan Dav','Loan KKB'].map((name,index)=>({...base,id:`LIAB-001-${index+1}`,name,parentId:root.id,history:[]}));
+ return [root,...children,...['L 1809 VZ','N 1369 IC'].map((name,index)=>({...base,id:`LIAB-KKB-${index+1}`,name,parentId:children[6].id,history:[]}))];
+}
+export function accountDepth(accounts,account){let depth=0;const seen=new Set([account.id]);let parentId=account.parentId;while(parentId){if(seen.has(parentId))throw Error('Hierarki akun tidak boleh melingkar.');seen.add(parentId);const parent=accounts.find(a=>a.id===parentId);if(!parent)throw Error('Akun induk tidak ditemukan.');depth++;parentId=parent.parentId;}return depth;}
+function subtreeHeight(accounts,id,seen=new Set()){if(seen.has(id))throw Error('Hierarki akun tidak boleh melingkar.');const next=new Set(seen).add(id);const children=accounts.filter(a=>a.parentId===id);return children.length?1+Math.max(...children.map(a=>subtreeHeight(accounts,a.id,next))):0;}
+function validateParent(store,group,parentId,id,active){
+ const maxDepth=group==='expense'?1:group==='other_liability'?2:0;
+ if(!parentId)return;
+ if(!maxDepth)throw Error('Kelompok akun ini tidak mendukung subakun.');
+ const parent=store.accounts.find(a=>a.id===parentId);if(!parent||parent.group!==group)throw Error('Akun induk harus dari kelompok yang sama.');
+ const visited=new Set(id?[id]:[]);let current=parent;
+ while(current){if(visited.has(current.id))throw Error('Akun tidak boleh menjadi induk dirinya sendiri atau keturunannya.');visited.add(current.id);if(current.group!==group)throw Error('Kelompok akun induk tidak sesuai.');if(active&&!current.active)throw Error('Subakun aktif harus memiliki seluruh akun induk aktif.');current=current.parentId?store.accounts.find(a=>a.id===current.parentId):null;}
+ const depth=accountDepth(store.accounts,parent)+1;const height=id?subtreeHeight(store.accounts,id):0;
+ if(depth+height>maxDepth)throw Error(group==='expense'?'Expenses mendukung satu tingkat subakun.':'Other Liabilities mendukung dua tingkat subakun di bawah akun utama.');
+}
+export function accountParentOptions(store,group,id=null,active=true){return store.accounts.filter(a=>{if(a.group!==group)return false;try{validateParent(store,group,a.id,id,active);return true;}catch{return false;}});}
 export function createInitialAccounts(){
- return [...CASH_NAMES.map((name,index)=>({id:`CASH-${String(index+1).padStart(3,'0')}`,name,kind:index<8?'petty_cash':'bank',group:'cash_bank',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...INVENTORY_NAMES.map((name,index)=>({id:`INV-ASSET-${String(index+1).padStart(3,'0')}`,name,kind:'inventory_asset',group:'inventory_asset',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...initialExpenses()];
+ return [...CASH_NAMES.map((name,index)=>({id:`CASH-${String(index+1).padStart(3,'0')}`,name,kind:index<8?'petty_cash':'bank',group:'cash_bank',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...INVENTORY_NAMES.map((name,index)=>({id:`INV-ASSET-${String(index+1).padStart(3,'0')}`,name,kind:'inventory_asset',group:'inventory_asset',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...initialExpenses(),...initialLiabilities()];
 }
 const clean=v=>String(v??'').trim();
 const normalized=v=>clean(v).replace(/\s+/g,' ').toLocaleLowerCase('id-ID');
@@ -17,16 +36,11 @@ export function saveAccount(store,input,role,id=null){
  const name=clean(input.name);const kind=input.kind;
  if(!name||name.length>120)throw Error('Nama akun wajib diisi, maksimal 120 karakter.');
  if(store.accounts.some(a=>a.id!==id&&normalized(a.name)===normalized(name)))throw Error('Nama akun sudah digunakan.');
- if(!['petty_cash','bank','inventory_asset','expense'].includes(kind))throw Error('Jenis akun tidak valid.');
- const group=kind==='expense'?'expense':kind==='inventory_asset'?'inventory_asset':'cash_bank';
+ if(!['petty_cash','bank','inventory_asset','expense','other_liability'].includes(kind))throw Error('Jenis akun tidak valid.');
+ const group=kind==='other_liability'?'other_liability':kind==='expense'?'expense':kind==='inventory_asset'?'inventory_asset':'cash_bank';
  if(existing&&existing.group!==group)throw Error('Kelompok akun asal tidak dapat diubah.');
  const parentId=clean(input.parentId)||null;
- if(parentId){
-  const parent=store.accounts.find(a=>a.id===parentId);
-  if(group!=='expense'||!parent||parent.group!=='expense'||parent.parentId||parent.id===id)throw Error('Pilih akun induk Expenses yang valid; subakun hanya satu tingkat.');
-  if(input.active===true&&!parent.active)throw Error('Subakun aktif harus memiliki akun induk aktif.');
-  if(id&&store.accounts.some(a=>a.parentId===id))throw Error('Akun induk yang memiliki subakun tidak dapat dijadikan subakun.');
- }
+ validateParent(store,group,parentId,id,input.active===true);
  if(id&&input.active!==true&&store.accounts.some(a=>a.parentId===id&&a.active))throw Error('Nonaktifkan subakun terlebih dahulu sebelum menonaktifkan akun induk.');
  const bankName=kind==='bank'?clean(input.bankName):'';const accountNumber=kind==='bank'?clean(input.accountNumber):'';const notes=clean(input.notes);
  if(bankName.length>120||accountNumber.length>64||notes.length>500)throw Error('Nama bank maksimal 120, nomor rekening 64, dan keterangan 500 karakter.');
