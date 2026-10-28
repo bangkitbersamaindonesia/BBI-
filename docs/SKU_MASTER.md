@@ -1,5 +1,7 @@
 # SKU master demo
 
+Planned warehouses: Gudang Lebak, Gudang Kediri, and Gudang Besar.
+
 Inventory opens Master SKU. Add garment variants, search the list, and inspect pcs by warehouse. Data lives in memory for this page session; reload restores examples. No backend transaction or accounting posting is performed.
 
 - Unique, case-insensitive normalized SKU code; required item name, size, color.

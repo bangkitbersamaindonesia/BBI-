@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {toPcs, validateSku, totalPcs} from '../src/sku-model.js';
-const valid = {sku:' abc-m ',name:'Kaos',size:'M',color:'Putih',purchasePrice:'35000',sellingPrice:'59000',qty:'2',unit:'lusin',warehouseId:'utama',notes:''};
+const valid = {sku:' abc-m ',name:'Kaos',size:'M',color:'Putih',purchasePrice:'35000',sellingPrice:'59000',qty:'2',unit:'lusin',warehouseId:'lebak',notes:''};
 test('all units normalize to canonical pcs, including exact fractional packs',()=>{
   for(const [unit,factor] of Object.entries({pcs:1,lusin:12,kodi:20,gros:144})) assert.equal(toPcs('2',unit),2*factor);
   assert.equal(toPcs('0.5','lusin'),6);
@@ -14,6 +14,6 @@ test('required fields, duplicates, prices and warehouses validate before inserti
   for(const price of ['-1','1.5','NaN','9007199254740992']) assert.ok(validateSku({...valid,purchasePrice:price}).errors.purchasePrice);
 });
 test('warehouse balances remain separate and totals are derived',()=>{
-  const balances=[{sku:'A',warehouseId:'utama',quantityPcs:24},{sku:'A',warehouseId:'barat',quantityPcs:12},{sku:'B',warehouseId:'utama',quantityPcs:200}];
+  const balances=[{sku:'A',warehouseId:'lebak',quantityPcs:24},{sku:'A',warehouseId:'kediri',quantityPcs:12},{sku:'B',warehouseId:'lebak',quantityPcs:200}];
   assert.equal(totalPcs({sku:'A'},balances),36); assert.equal(totalPcs({sku:'C'},balances),0);
 });

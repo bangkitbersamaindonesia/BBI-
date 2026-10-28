@@ -7,7 +7,7 @@ export function mountSku(root) {
     { sku:'OXF-BLK-XL', name:'Kemeja Oxford', size:'XL', color:'Hitam', purchasePrice:85000, sellingPrice:125000, unit:'lusin', notes:'Contoh produk garment' },
     { sku:'TSH-WHT-M', name:'Kaos Basic', size:'M', color:'Putih', purchasePrice:35000, sellingPrice:59000, unit:'kodi', notes:'' },
   ];
-  const balances = [{sku:'OXF-BLK-XL',warehouseId:'utama',quantityPcs:120},{sku:'OXF-BLK-XL',warehouseId:'barat',quantityPcs:24},{sku:'TSH-WHT-M',warehouseId:'utama',quantityPcs:200}];
+  const balances = [{sku:'OXF-BLK-XL',warehouseId:'lebak',quantityPcs:120},{sku:'OXF-BLK-XL',warehouseId:'kediri',quantityPcs:24},{sku:'TSH-WHT-M',warehouseId:'lebak',quantityPcs:200}];
   const field = (key, label, type='text', extra='') => `<label for="sku-${key}">${label}<input id="sku-${key}" name="${key}" type="${type}" ${extra} aria-describedby="error-${key}" /><small class="field-error" id="error-${key}"></small></label>`;
   root.innerHTML = `
     <div class="demo-banner"><strong>Master SKU · Demo</strong><span>Data hanya tersimpan selama halaman terbuka dan akan kembali ke contoh saat dimuat ulang.</span></div>

@@ -1,8 +1,8 @@
 export const UNITS = Object.freeze({ pcs: 1, lusin: 12, kodi: 20, gros: 144 });
 export const WAREHOUSES = Object.freeze([
-  { id: 'utama', name: 'Gudang Utama' },
-  { id: 'barat', name: 'Gudang Barat' },
-  { id: 'timur', name: 'Gudang Timur' },
+  { id: 'lebak', name: 'Gudang Lebak' },
+  { id: 'kediri', name: 'Gudang Kediri' },
+  { id: 'besar', name: 'Gudang Besar' },
 ]);
 export function toPcs(qty, unit) {
   if (!Object.hasOwn(UNITS, unit) || String(qty).trim() === '') throw new Error('Qty dan satuan wajib diisi.');
