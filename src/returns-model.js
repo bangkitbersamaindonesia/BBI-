@@ -1,3 +1,4 @@
+import { planReturnCosts,commitCostPools } from './margin-model.js';
 import { WAREHOUSES } from './sku-model.js';
 import { availablePcs } from './sales-model.js';
 import { validDate } from './supplier-model.js';
@@ -67,8 +68,10 @@ export function decideReturn(store,returnId,input,role){
     if(!Number.isSafeInteger(qty)||!Number.isSafeInteger(current+(record.type==='customer'?qty:-qty)))throw Error('Stok retur melebihi batas aman.');
     if(record.type==='supplier'&&availablePcs(store,sku,record.warehouseId)<qty)throw Error(`Stok bebas ${sku} di gudang terpilih tidak cukup; stok yang dialokasikan ke SO tidak dapat diretur.`);
   }
-  const credit={id:`CR-${record.type==='customer'?'C':'S'}-DEMO-${String(store.credits.length+1).padStart(4,'0')}`,type:record.type,sourceId:record.sourceId,returnId:record.id,party:record.party,date:record.date,lines:record.lines.map(l=>({...l})),total:record.total,status:'Penyesuaian demo · belum diposting',at};
+  const valuation=planReturnCosts(store,record,source);
+  const credit={id:`CR-${record.type==='customer'?'C':'S'}-DEMO-${String(store.credits.length+1).padStart(4,'0')}`,type:record.type,sourceId:record.sourceId,returnId:record.id,party:record.party,date:record.date,lines:valuation.lines,costReversal:valuation.costReversal,total:record.total,status:'Penyesuaian demo · belum diposting',at};
   // Validation completes before stock, credit and status changes are committed together in memory.
   for(const [sku,qty]of qtyBySku){let balance=store.balances.find(b=>b.sku===sku&&b.warehouseId===record.warehouseId);if(!balance){balance={sku,warehouseId:record.warehouseId,quantityPcs:0};store.balances.push(balance);}const delta=record.type==='customer'?qty:-qty;balance.quantityPcs+=delta;store.movements.push({sourceId:record.id,creditId:credit.id,kind:record.type==='customer'?'customer_return':'supplier_return',sku,warehouseId:record.warehouseId,quantityDelta:delta,at});}
+  commitCostPools(store,valuation.pools);
   store.credits.push(credit);record.status='Disetujui';record.creditId=credit.id;record.history.push({action:`Disetujui Admin 1: ${note}; stok diperbarui; ${credit.id} mengurangi tagihan`,at});return record;
 }

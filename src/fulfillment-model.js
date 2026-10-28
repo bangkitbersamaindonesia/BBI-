@@ -1,3 +1,4 @@
+import { planReceiptCosts,planInvoiceCosts,commitCostPools,marginPercent } from './margin-model.js';
 import { WAREHOUSES } from './sku-model.js';
 import { availablePcs } from './sales-model.js';
 import { validDate } from './supplier-model.js';
@@ -9,8 +10,10 @@ export function receiveSupplierGoods(store,poId,role){
   const lines=po.response.lines.filter(l=>l.quantityPcs>0);
   if(!lines.length)throw Error('Tidak ada barang supplier untuk diterima.');
   for(const l of lines){const current=store.balances.find(b=>b.sku===l.sku&&b.warehouseId===po.warehouseId)?.quantityPcs??0;if(!Number.isSafeInteger(current+l.quantityPcs))throw Error('Stok melebihi batas aman.');}
+  const receiptCosts=planReceiptCosts(store,lines);
   const at=new Date().toISOString();const receipt={id:`GR-DEMO-${store.receipts.length+1}`,poId,orderId:po.orderId,warehouseId:po.warehouseId,lines:lines.map(l=>({sku:l.sku,quantityPcs:l.quantityPcs})),at};
   for(const l of lines){let b=store.balances.find(b=>b.sku===l.sku&&b.warehouseId===po.warehouseId);if(!b){b={sku:l.sku,warehouseId:po.warehouseId,quantityPcs:0};store.balances.push(b);}b.quantityPcs+=l.quantityPcs;store.reservations.push({orderId:po.orderId,sku:l.sku,warehouseId:po.warehouseId,quantityPcs:l.quantityPcs});store.movements.push({sourceId:receipt.id,kind:'receipt',sku:l.sku,warehouseId:po.warehouseId,quantityDelta:l.quantityPcs,at});}
+  commitCostPools(store,receiptCosts);
   store.receipts.push(receipt);po.history.push({action:`${receipt.id}: barang dikonfirmasi diterima dan dialokasikan ke SO`,at});return receipt;
 }
 export function dispatchCustomerOrder(store,orderId,input,role){
@@ -35,6 +38,7 @@ export function dispatchCustomerOrder(store,orderId,input,role){
   }
   for(const line of invoiceLines){total+=line.subtotal;if(!Number.isSafeInteger(line.subtotal)||!Number.isSafeInteger(total))throw Error('Nilai invoice melebihi batas aman.');}
   for(const p of planned){const b=store.balances.find(b=>b.sku===p.sku&&b.warehouseId===p.warehouseId);if(!b||b.quantityPcs<claimed(p.sku,p.warehouseId))throw Error('Stok fisik tidak cukup.');}
+  const valuation=planInvoiceCosts(store,invoiceLines);
   const at=new Date().toISOString();const id=`SHIP-DEMO-${store.shipments.length+1}`;
   const recoveries=[];const losses=[];
   for(const f of fulfillments){const sale=order.lines.find(l=>l.sku===f.sku);const existing=store.lossSales.filter(l=>l.orderId===orderId&&l.sku===f.sku);let recover=f.substitutePcs;let existingNet=0;
@@ -43,8 +47,9 @@ export function dispatchCustomerOrder(store,orderId,input,role){
     if(extra)losses.push({id:`LOSS-DEMO-${String(store.lossSales.length+losses.length+1).padStart(4,'0')}`,responseId:'',poId:po?.id??'',orderId,date:input.date,customer:order.customer,salesperson:order.salesperson,supplier:'BBI / gagal kirim',warehouseId:'',sku:sale.sku,name:sale.name,size:sale.size,color:sale.color,quantityPcs:extra,sellingPrice:sale.price,potentialRevenue:extra*sale.price,reason:f.reason,at});
   }
   const shipment={id,orderId,date:input.date,lines:invoiceLines,allocations:planned,fulfillments,customerApproved:input.customerApproved===true,at};
-  const invoice=invoiceLines.length?{id:`INV-DEMO-${store.invoices.length+1}`,orderId,shipmentId:id,customer:order.customer,date:input.date,lines:invoiceLines.map(l=>({...l})),total,status:'Draft sesuai pengiriman',at}:null;
+  const invoice=invoiceLines.length?{id:`INV-DEMO-${store.invoices.length+1}`,orderId,shipmentId:id,customer:order.customer,date:input.date,lines:valuation.lines,total,costTotal:valuation.costTotal,grossProfit:total-valuation.costTotal,grossMarginPercent:marginPercent(total,total-valuation.costTotal),status:'Draft sesuai pengiriman',at}:null;
   for(const p of planned){store.balances.find(b=>b.sku===p.sku&&b.warehouseId===p.warehouseId).quantityPcs-=p.quantityPcs;store.movements.push({sourceId:id,kind:'delivery',sku:p.sku,warehouseId:p.warehouseId,quantityDelta:-p.quantityPcs,at});}
+  commitCostPools(store,valuation.pools);
   store.reservations=store.reservations.filter(r=>r.orderId!==orderId);store.shipments.push(shipment);if(invoice)store.invoices.push(invoice);store.lossSales.push(...losses);store.recoveries.push(...recoveries);
   order.status=fulfillments.some(f=>f.remaining)?'Pengiriman final · ada sisa gagal':'Pengiriman final selesai';order.history.push({action:`${id}: pengiriman final; ${invoice?invoice.id:'tanpa invoice'}; SKU pengganti ${input.customerApproved?'disetujui pelanggan':'tidak digunakan'}`,at});return {shipment,invoice};
 }

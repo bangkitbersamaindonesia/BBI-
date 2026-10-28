@@ -1,3 +1,4 @@
+import { mountMarginReport } from "./margin.js";
 import { mountLossSales } from "./loss-sales.js";
 import "./style.css";
 import { mountSales } from "./sales.js";
@@ -103,3 +104,5 @@ mountSku(document.querySelector("#sku-content"));
 mountSales(document.querySelector("#sales-content"), document.querySelector("#purchasing-content"));
 
 mountLossSales(document.querySelector("#reports-content"));
+
+mountMarginReport(document.querySelector("#reports-content"));
