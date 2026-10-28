@@ -1,3 +1,4 @@
+import { mountReturnHandlers } from './returns.js';
 import { fulfillmentPanel, readDispatch } from './fulfillment.js';
 import { receiveSupplierGoods, dispatchCustomerOrder } from './fulfillment-model.js';
 import { supplierPanel, readSupplierResponse, previewSupplierResponse } from './supplier.js';
@@ -103,5 +104,7 @@ export function mountSales(salesRoot,purchasingRoot) {
     linesRoot.querySelectorAll('.line-sku').forEach(select=>{const value=select.value;select.innerHTML=productOptions(value);});
     renderOrders();renderPurchasing();
   });
+  mountReturnHandlers(salesRoot,()=>role);
+  mountReturnHandlers(purchasingRoot,()=>role);
   addLine();syncRole();
 }

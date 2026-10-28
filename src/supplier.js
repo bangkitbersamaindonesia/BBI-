@@ -1,3 +1,4 @@
+import { returnPanel } from './returns.js';
 import { demoStore as store } from './demo-store.js';
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=value=>new Intl.NumberFormat('id-ID').format(value);
@@ -8,6 +9,7 @@ export function supplierPanel(po,role) {
     return `<section class="supplier-panel"><h2>Respons final supplier · ${esc(response.date)}</h2><p class="sku-guidance">${esc(response.id)} · Qty dikirim berdasarkan konfirmasi/tagihan supplier, belum merupakan bukti barang diterima atau dikirim ke pelanggan.</p><div class="table-scroll"><table><thead><tr><th>SKU</th><th>QTY PO PCS</th><th>DIPENUHI PCS</th><th>LOSS PCS</th><th>ALASAN</th></tr></thead><tbody>${response.lines.map(l=>`<tr><td>${esc(l.sku)}</td><td>${num(l.orderedPcs)}</td><td>${num(l.quantityPcs)}</td><td>${num(l.shortagePcs)}</td><td>${esc(l.reason||'—')}</td></tr>`).join('')}</tbody></table></div>
     ${bill?`<h2>Tagihan supplier ${esc(bill.reference)}</h2><p class="sku-guidance">${esc(bill.id)} · ${esc(bill.status)} · Hanya qty yang dipenuhi.</p><div class="table-scroll"><table><thead><tr><th>SKU</th><th>QTY TAGIHAN PCS</th><th>HARGA BELI / PCS</th><th>SUBTOTAL</th></tr></thead><tbody>${bill.lines.map(l=>`<tr><td>${esc(l.sku)}</td><td>${num(l.quantityPcs)}</td><td>${money(l.price)}</td><td>${money(l.subtotal)}</td></tr>`).join('')}</tbody></table></div><p class="workflow-total">Total barang ditagih: ${money(bill.total)}</p><p class="sku-guidance">Sebelum pajak/ongkir; belum menjadi jurnal, utang terposting, atau pembayaran.</p>`:'<p class="sku-guidance">Seluruh barang tidak tersedia: tidak ada tagihan barang yang dicatat.</p>'}
     ${bill?(store.receipts.some(r=>r.poId===po.id)?'<p class="sku-guidance">Barang supplier sudah dikonfirmasi diterima dan dialokasikan ke SO.</p>':role==='admin1'?`<button class="primary-button" type="button" data-receive="${esc(po.id)}">Konfirmasi barang sesuai tagihan diterima</button>`:''):''}
+    ${bill?returnPanel('supplier',bill,role):''}
     ${response.lines.some(l=>l.shortagePcs>0)?'<p class="loss-notice">Loss sales telah dicatat. Lihat menu Reports untuk rincian, filter, dan ekspor CSV.</p>':''}</section>`;
   }
   if(role!=='admin1'||po.status!=='Siap dikirim')return '';

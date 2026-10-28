@@ -1,0 +1,33 @@
+import { demoStore as store,notifyDemo } from './demo-store.js';
+import { WAREHOUSES } from './sku-model.js';
+import { requestReturn,decideReturn,returnablePcs,adjustedDocumentTotal } from './returns-model.js';
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>new Intl.NumberFormat('id-ID').format(v);const money=v=>'Rp '+num(v);
+export function returnPanel(type,doc,role){
+  const records=store.returns.filter(r=>r.type===type&&r.sourceId===doc.id);
+  const totals=adjustedDocumentTotal(store,type,doc.id);
+  const received=type==='customer'||store.receipts.some(r=>r.poId===doc.poId);
+  const canRequest=received&&(type==='customer'||role==='admin1');
+  const options=doc.lines.map((l,index)=>({line:l,index,remaining:received?returnablePcs(store,type,doc.id,index):0}));
+  const key=`${type}-${doc.id}`;
+  return `<section class="supplier-panel return-panel"><h2>Retur ${type==='customer'?'pelanggan':'ke supplier'}</h2><div class="return-totals"><span>Tagihan awal <strong>${money(totals.original)}</strong></span><span>Pengurangan retur disetujui <strong>${money(totals.credits)}</strong></span><span>Tagihan setelah retur <strong>${money(totals.net)}</strong></span></div><p class="sku-guidance">Dokumen asal tetap tersimpan. Pengajuan belum mengubah stok/tagihan; perubahan otomatis setelah Admin 1 menyetujui. Nilai retur memakai harga baris dokumen asal. Belum termasuk pembayaran, pajak atau ongkir.</p>
+  ${!received?'<p class="sku-guidance">Form retur tersedia setelah barang supplier dikonfirmasi diterima.</p>':''}
+  ${canRequest&&options.some(o=>o.remaining>0)?`<form class="return-request" data-type="${type}" data-source="${esc(doc.id)}"><div class="sku-form-grid"><label for="ret-name-${key}">Nama pengaju<input id="ret-name-${key}" name="requestedBy" required maxlength="120" /></label><label for="ret-date-${key}">Tanggal retur<input id="ret-date-${key}" name="date" type="date" min="${esc(doc.date)}" required /></label><label for="ret-warehouse-${key}">${type==='customer'?'Gudang penerima retur':'Gudang pengirim retur'}<select id="ret-warehouse-${key}" name="warehouseId">${WAREHOUSES.map(w=>`<option value="${w.id}">${w.name}</option>`).join('')}</select></label><label class="sku-notes" for="ret-reason-${key}">Alasan retur<textarea id="ret-reason-${key}" name="reason" maxlength="500" rows="2" required></textarea></label></div><div class="table-scroll"><table><thead><tr><th>ITEM DOKUMEN</th><th>SKU</th><th>HARGA / PCS</th><th>SISA DAPAT DIAJUKAN PCS</th><th>QTY RETUR PCS</th></tr></thead><tbody>${options.map(o=>`<tr><td>Baris ${o.index+1}${o.line.substitution?' · Pengganti untuk '+esc(o.line.sourceSku):''}</td><td>${esc(o.line.sku)}</td><td>${money(o.line.price)}</td><td>${num(o.remaining)}</td><td><label class="return-qty-label" for="ret-qty-${key}-${o.index}">Qty retur baris ${o.index+1}<input id="ret-qty-${key}-${o.index}" class="return-qty" data-line="${o.index}" type="number" min="0" max="${o.remaining}" step="1" value="0" required ${o.remaining===0?'disabled':''} /></label></td></tr>`).join('')}</tbody></table></div><p class="sku-guidance">Isi 0 untuk item yang tidak diretur. Qty pengajuan lain yang masih menunggu turut mengurangi batas retur.</p><button class="primary-button" type="submit">Ajukan retur ${type==='customer'?'pelanggan':'supplier'}</button></form>`:''}
+  ${records.map(r=>`<article class="return-record"><div class="panel-head"><h2>${esc(r.id)} · ${esc(r.party)}</h2><span class="status ${r.status==='Disetujui'?'green':r.status==='Ditolak'?'neutral':'amber'}">${esc(r.status)}</span></div><p class="sku-guidance">${esc(r.date)} · ${esc(WAREHOUSES.find(w=>w.id===r.warehouseId)?.name)} · Pengaju: ${esc(r.requestedBy)}<br>Alasan: ${esc(r.reason)}</p><div class="table-scroll"><table><thead><tr><th>ITEM / SKU</th><th>RETUR PCS</th><th>HARGA / PCS</th><th>PENGURANGAN TAGIHAN</th></tr></thead><tbody>${r.lines.map(l=>`<tr><td>Baris ${l.lineIndex+1} · ${esc(l.sku)}</td><td>${num(l.quantityPcs)}</td><td>${money(l.price)}</td><td>${money(l.subtotal)}</td></tr>`).join('')}</tbody></table></div><p class="workflow-total">Nilai retur: ${money(r.total)}</p>${r.creditId?`<p class="sku-guidance">Penyesuaian ${esc(r.creditId)} telah mengurangi tagihan. Stok ${type==='customer'?'bertambah':'berkurang'} di gudang terpilih.</p>`:''}
+  ${role==='admin1'&&r.status==='Menunggu Admin 1'?`<form class="return-decision" data-return="${esc(r.id)}"><label class="response-confirm"><input name="physicalConfirmed" type="checkbox" /> ${type==='customer'?'Barang retur sudah diterima dan layak masuk stok gudang.':'Barang telah dikembalikan ke supplier dan pengurangan tagihan disepakati supplier.'}</label><label class="decision-note" for="ret-note-${r.id}">Catatan keputusan Admin 1<textarea id="ret-note-${r.id}" name="note" maxlength="500" required rows="2"></textarea></label><div class="sku-actions"><button class="primary-button" type="submit" name="decision" value="approve">Setujui retur</button><button class="secondary-button" type="submit" name="decision" value="reject">Tolak retur</button></div></form>`:''}<details class="workflow-history"><summary>Riwayat retur</summary><ul>${r.history.map(h=>`<li>${esc(h.action)} · ${esc(new Date(h.at).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'}))}</li>`).join('')}</ul></details></article>`).join('')}</section>`;
+}
+export function mountReturnHandlers(root,getRole){
+  function message(text){root.querySelector('.workflow-message').textContent=text;}
+  root.addEventListener('submit',event=>{
+    const form=event.target;
+    if(!form.matches('.return-request,.return-decision'))return;event.preventDefault();
+    try{
+      if(form.matches('.return-request')){
+        const lines=[...form.querySelectorAll('.return-qty:not(:disabled)')].map(el=>({lineIndex:Number(el.dataset.line),quantityPcs:el.value})).filter(l=>l.quantityPcs!==''&&Number(l.quantityPcs)!==0);
+        const result=requestReturn(store,form.dataset.type,form.dataset.source,{...Object.fromEntries(new FormData(form)),lines},getRole());notifyDemo();message(`${result.id} diajukan. Menunggu persetujuan Admin 1; stok dan tagihan belum berubah.`);
+      }else{
+        const result=decideReturn(store,form.dataset.return,{decision:event.submitter?.value,note:form.elements.note.value,physicalConfirmed:form.elements.physicalConfirmed.checked},getRole());notifyDemo();message(`${result.id}: ${result.status}.${result.status==='Disetujui'?' Stok dan tagihan setelah retur sudah diperbarui.':' Stok dan tagihan tetap.'}`);
+      }
+    }catch(error){message(error.message);}
+  });
+}
