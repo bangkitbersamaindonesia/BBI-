@@ -1,4 +1,5 @@
 import "./style.css";
+import { mountSales } from "./sales.js";
 import { mountSku } from "./sku.js";
 import { mountDashboardAnalytics } from "./dashboard-analytics.js";
 
@@ -20,7 +21,7 @@ const orders = [
 const format = new Intl.DateTimeFormat("id-ID",{day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Jakarta"});
 const app = document.querySelector("#app");
 function icon(name){return '<span class="icon" aria-hidden="true">'+name+'</span>';}
-function menuItem(item,index){return '<button class="nav-item '+(index===0?'active':'')+'" type="button" data-page="'+item.label+'">'+icon(item.icon)+'<span>'+item.label+'</span>'+(item.label==='Sales'?'<span class="nav-count">8</span>':'')+'</button>';}
+function menuItem(item,index){return '<button class="nav-item '+(index===0?'active':'')+'" type="button" data-page="'+item.label+'">'+icon(item.icon)+'<span>'+item.label+'</span>'+'</button>';}
 app.innerHTML = `
 <div class="shell">
   <aside class="sidebar" id="sidebar">
@@ -56,6 +57,8 @@ app.innerHTML = `
       <section class="panel table-panel"><div class="panel-head"><div><h2>Sales Order Terbaru</h2><p>Pantau pemesanan grosir pelanggan</p></div><span class="period-pill">4 transaksi contoh</span></div><div class="table-scroll"><table><thead><tr><th>NO. ORDER</th><th>PELANGGAN</th><th>PRODUK</th><th>TOTAL</th><th>STATUS</th></tr></thead><tbody>${orders.map(order=>'<tr><td class="order-id">'+order.id+'</td><td class="customer-name">'+order.customer+'</td><td>'+order.category+'</td><td class="total">'+order.value+'</td><td><span class="status '+order.tone+'"><i></i>'+order.status+'</span></td></tr>').join("")}</tbody></table></div></section>
       </div>
       <section id="sku-content" hidden></section>
+      <section id="sales-content" hidden></section>
+      <section id="purchasing-content" hidden></section>
       <section id="placeholder" hidden class="panel placeholder"><div class="placeholder-icon">◈</div><h2 id="placeholder-title"></h2><p>Modul ini akan dikembangkan pada tahap berikutnya. Dashboard saat ini hanya menampilkan data contoh.</p><button class="secondary-button" id="back-dashboard" type="button">Kembali ke Dashboard</button></section>
       <footer class="footer"><span>© 2026 BBI ERP · Garment Trading Management</span><span>Prototype v0.1 · Tanpa database</span></footer>
     </main>
@@ -71,13 +74,16 @@ const sidebar = document.querySelector("#sidebar");
 function setPage(page){
   const isDashboard=page==="Dashboard";
   const isSku=page==="Inventory";
+  const isSales=page==="Sales", isPurchasing=page==="Purchasing";
+  document.querySelector("#sales-content").hidden=!isSales;
+  document.querySelector("#purchasing-content").hidden=!isPurchasing;
   document.querySelector("#sku-content").hidden=!isSku;
   buttons.forEach(button=>{button.classList.toggle("active",button.dataset.page===page);button.setAttribute("aria-current",button.dataset.page===page?"page":"false");});
   pageTitle.textContent=isSku?"Master SKU":page;
   document.querySelector("#breadcrumb-active").textContent=page;
-  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":"Halaman "+page+" sedang disiapkan.";
+  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Pesanan pelanggan dan pemeriksaan stok oleh Admin 1.":isPurchasing?"Draft PO dari kekurangan stok Sales Order.":"Halaman "+page+" sedang disiapkan.";
   dashboard.hidden=!isDashboard;
-  placeholder.hidden=isDashboard || isSku;
+  placeholder.hidden=isDashboard || isSku || isSales || isPurchasing;
   if(!isDashboard) document.querySelector("#placeholder-title").textContent=page;
   sidebar.classList.remove("open");mobileToggle.setAttribute("aria-expanded","false");
 }
@@ -90,3 +96,5 @@ mountDashboardAnalytics();
 
 
 mountSku(document.querySelector("#sku-content"));
+
+mountSales(document.querySelector("#sales-content"), document.querySelector("#purchasing-content"));
