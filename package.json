@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "test": "node --test",
     "preview": "vite preview"
   },
   "devDependencies": {
     "vite": "^7.0.0"
   }
 }
+

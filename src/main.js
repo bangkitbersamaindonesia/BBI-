@@ -1,4 +1,5 @@
 import "./style.css";
+import { mountSku } from "./sku.js";
 import { mountDashboardAnalytics } from "./dashboard-analytics.js";
 
 const nav = [
@@ -54,6 +55,7 @@ app.innerHTML = `
       </section>
       <section class="panel table-panel"><div class="panel-head"><div><h2>Sales Order Terbaru</h2><p>Pantau pemesanan grosir pelanggan</p></div><span class="period-pill">4 transaksi contoh</span></div><div class="table-scroll"><table><thead><tr><th>NO. ORDER</th><th>PELANGGAN</th><th>PRODUK</th><th>TOTAL</th><th>STATUS</th></tr></thead><tbody>${orders.map(order=>'<tr><td class="order-id">'+order.id+'</td><td class="customer-name">'+order.customer+'</td><td>'+order.category+'</td><td class="total">'+order.value+'</td><td><span class="status '+order.tone+'"><i></i>'+order.status+'</span></td></tr>').join("")}</tbody></table></div></section>
       </div>
+      <section id="sku-content" hidden></section>
       <section id="placeholder" hidden class="panel placeholder"><div class="placeholder-icon">◈</div><h2 id="placeholder-title"></h2><p>Modul ini akan dikembangkan pada tahap berikutnya. Dashboard saat ini hanya menampilkan data contoh.</p><button class="secondary-button" id="back-dashboard" type="button">Kembali ke Dashboard</button></section>
       <footer class="footer"><span>© 2026 BBI ERP · Garment Trading Management</span><span>Prototype v0.1 · Tanpa database</span></footer>
     </main>
@@ -68,12 +70,14 @@ const mobileToggle = document.querySelector("#menu-toggle");
 const sidebar = document.querySelector("#sidebar");
 function setPage(page){
   const isDashboard=page==="Dashboard";
+  const isSku=page==="Inventory";
+  document.querySelector("#sku-content").hidden=!isSku;
   buttons.forEach(button=>{button.classList.toggle("active",button.dataset.page===page);button.setAttribute("aria-current",button.dataset.page===page?"page":"false");});
-  pageTitle.textContent=page;
+  pageTitle.textContent=isSku?"Master SKU":page;
   document.querySelector("#breadcrumb-active").textContent=page;
-  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":"Halaman "+page+" sedang disiapkan.";
+  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":"Halaman "+page+" sedang disiapkan.";
   dashboard.hidden=!isDashboard;
-  placeholder.hidden=isDashboard;
+  placeholder.hidden=isDashboard || isSku;
   if(!isDashboard) document.querySelector("#placeholder-title").textContent=page;
   sidebar.classList.remove("open");mobileToggle.setAttribute("aria-expanded","false");
 }
@@ -83,3 +87,6 @@ document.querySelector("#back-dashboard").addEventListener("click",()=>setPage("
 document.querySelector("#report-button").addEventListener("click",()=>setPage("Reports"));
 
 mountDashboardAnalytics();
+
+
+mountSku(document.querySelector("#sku-content"));
