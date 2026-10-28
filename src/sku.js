@@ -1,4 +1,4 @@
-import { demoStore, notifyDemo } from './demo-store.js';
+import { demoStore, notifyDemo, subscribeDemo } from './demo-store.js';
 import { UNITS, WAREHOUSES, validateSku, toPcs, totalPcs } from './sku-model.js';
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number = new Intl.NumberFormat('id-ID');
@@ -55,5 +55,6 @@ export function mountSku(root) {
     form.reset(); render(); notifyDemo(); message.textContent=`SKU ${product.sku} berhasil ditambahkan ke demo.`;
   });
   root.querySelector('#sku-search').addEventListener('input', render);
+  subscribeDemo(render);
   render(); preview();
 }
