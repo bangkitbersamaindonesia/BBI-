@@ -16,7 +16,7 @@ const history=items=>`<details class="workflow-history"><summary>Riwayat demo</s
 export function mountSales(salesRoot,purchasingRoot) {
   let role='sales'; let lineId=0;
   const banner=`<div class="demo-banner"><strong>Demo alur Sales → Admin 1 → Purchasing</strong><span>Data sesi ini hilang saat reload. Peran simulasi, tanpa login. PO dan respons supplier dicatat manual; tidak ada pengiriman otomatis.</span></div>`;
-  const roleControl=prefix=>`<div class="workflow-role"><label for="${prefix}-role">Peran simulasi</label><select id="${prefix}-role" class="role-select"><option value="sales">Sales</option><option value="admin1">Admin 1</option></select><span>1. SO → 2. Stok / PO → 3. Tagihan / penerimaan → 4. Pengiriman / invoice</span></div>`;
+  const roleControl=prefix=>`<div class="workflow-role"><label for="${prefix}-role">Peran simulasi</label><select id="${prefix}-role" class="role-select"><option value="sales">Sales</option><option value="admin1">Admin 1</option><option value="admin2">Admin 2</option></select><span>1. SO → 2. Stok / PO → 3. Tagihan / penerimaan → 4. Pengiriman / invoice</span></div>`;
   salesRoot.innerHTML=`${banner}${roleControl('sales')}<section class="panel" id="so-entry"><h2>Sales Order pelanggan</h2><p class="sku-guidance">Diisi oleh sales. Harga per pcs; 1 lusin = 12, kodi = 20, gros = 144 pcs.</p><form id="so-form"><div class="sku-form-grid">
     <label for="so-customer">Nama pelanggan<input id="so-customer" name="customer" required maxlength="500" placeholder="PT / CV / nama toko" /></label>
     <label for="so-salesperson">Nama sales<input id="so-salesperson" name="salesperson" required maxlength="500" /></label>
