@@ -1,6 +1,6 @@
 # Accounting account master (client-side demo)
 
-Accounting contains separate Cash / Bank, Accounts Receiveable, Inventory Asset, COGS / HPP, Expenses and Other Liabilities groups. Names preserve the user's spelling and capitalization.
+Accounting contains separate Cash / Bank, Accounts Receiveable, Inventory Assets, COGS / HPP, Expenses and Other Liabilities groups. Names preserve the user's spelling and capitalization.
 
 ## Cash / Bank
 
@@ -19,17 +19,28 @@ This is the latest replacement list, in the user's exact spelling, capitalizatio
 
 Recognizable renamed/reordered accounts keep their prior demo IDs. PC Bazar receives a new stable ID and replaces the old petty cash DP entry in the initial list; no assumed identity or balance transfer between those two accounts is made. The old labels are no longer seeded. There is no production database or balance migration; reload restores this new list while other account groups are unchanged.
 
-## Inventory Asset
+## Inventory Assets — Other Current Assets
 
-Dress Fashion; Bawahan; Blouse / Atasan; APD; Gamis Anak; Gamis Dewasa; Underwear; misc.
+The parent account is **Inventory Assets**, classified explicitly as `other_current_asset` / **Other Current Assets**. Its child accounts, in the latest requested order, are:
 
-These are inventory asset account names, separate from individual SKUs. No SKU-to-account mapping, balances, chart-of-accounts numbering, journal policy or inventory valuation mapping was invented. The existing SKU weighted-average HPP calculation is unaffected.
+1. Dress Fashion
+2. Bawahan
+3. Blouse / Atasan
+4. Gamis Anak
+5. Gamis Dewasa
+6. APD
+7. Underwear
+8. Misc
+
+The parent has a new stable ID `INV-ASSET-ROOT`; existing category account IDs are retained when reparented/reordered, and only inventory “misc” is capitalized to “Misc”. COGS is independent and retains its previous order and “misc” spelling. Inventory Assets supports one subaccount level, with the same cycle/depth/group/active-parent checks as Expenses. The new-account form defaults its parent to Inventory Assets. Edits preserve the Other Current Assets classification.
+
+These are chart-of-account records separate from SKUs. No balances, opening values, SKU/category links, GL posting, or changes to weighted-average invoice HPP were invented. Reload now restores 60 master accounts: 10 cash/bank, 1 AR, 9 inventory assets including the parent, 8 COGS, 22 expenses and 10 other liabilities. The app remains session-based demo.
 
 ## Behavior and limits
 
 Admin 1 simulation can add/edit names, types, optional bank details, notes and active status; Sales simulation is read-only. Cash/bank accounts can change type; existing bank details must be explicitly cleared before converting a bank account to petty cash. Inventory accounts remain in their original group. Names must be unique within their account group ignoring capitalization and repeated whitespace; the same label can exist in Inventory Asset and COGS as different accounts. Records retain stable IDs and in-memory edit history. No deletion is provided.
 
-Everything is page-session memory; reload restores the supplied 59 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
+Everything is page-session memory; reload restores the supplied 60 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
 
 ## Expenses
 
