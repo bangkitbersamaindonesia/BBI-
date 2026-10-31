@@ -4,18 +4,20 @@ Accounting contains separate Cash / Bank, Inventory Asset, COGS / HPP, Expenses 
 
 ## Cash / Bank
 
-1. petty cash BN PAN
-2. petty cash DP
-3. PC Merry
-4. PC DAN
-5. PC Herry
-6. PC Doni
-7. PC Lutfi
-8. PC Dipa
-9. PT 3636
-10. NP 222999
+1. PT 3636
+2. NP 222999
+3. PC Dan
+4. PC Her
+5. PC don
+6. PC Dip
+7. PC Lut
+8. PC Mer
+9. PC BN PAN
+10. PC Bazar
 
-The first eight default to petty cash; PT 3636 and NP 222999 default to bank. These types are editable assumptions. Bank name and account number are blank until supplied; number fragments in account labels are not inferred as account numbers. Currency defaults to IDR, consistent with the ERP requirements.
+This is the latest replacement list, in the user's exact spelling, capitalization and order. PT 3636 and NP 222999 default to bank; the PC accounts default to petty cash. Types remain editable. Bank name and account number are blank until supplied; numeric fragments in labels are not inferred as account numbers. Currency is IDR.
+
+Recognizable renamed/reordered accounts keep their prior demo IDs. PC Bazar receives a new stable ID and replaces the old petty cash DP entry in the initial list; no assumed identity or balance transfer between those two accounts is made. The old labels are no longer seeded. There is no production database or balance migration; reload restores this new list while other account groups are unchanged.
 
 ## Inventory Asset
 

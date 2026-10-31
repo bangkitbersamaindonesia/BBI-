@@ -1,4 +1,15 @@
-const CASH_NAMES=['petty cash BN PAN','petty cash DP','PC Merry','PC DAN','PC Herry','PC Doni','PC Lutfi','PC Dipa','PT 3636','NP 222999'];
+const CASH_ACCOUNTS=[
+ {id:'CASH-009',name:'PT 3636',kind:'bank'},
+ {id:'CASH-010',name:'NP 222999',kind:'bank'},
+ {id:'CASH-004',name:'PC Dan',kind:'petty_cash'},
+ {id:'CASH-005',name:'PC Her',kind:'petty_cash'},
+ {id:'CASH-006',name:'PC don',kind:'petty_cash'},
+ {id:'CASH-008',name:'PC Dip',kind:'petty_cash'},
+ {id:'CASH-007',name:'PC Lut',kind:'petty_cash'},
+ {id:'CASH-003',name:'PC Mer',kind:'petty_cash'},
+ {id:'CASH-001',name:'PC BN PAN',kind:'petty_cash'},
+ {id:'CASH-011',name:'PC Bazar',kind:'petty_cash'},
+];
 const INVENTORY_NAMES=['Dress Fashion','Bawahan','Blouse / Atasan','APD','Gamis Anak','Gamis Dewasa','Underwear','misc'];
 const EXPENSE_NAMES=['R&D','Barang cacat/hilang','Komisi sales','Label Plastik Karung','Advertising & Promotion','Auto and Truck Expenses','Bank service charges','Business Licenses & Permits','Depreciation expenses','Insurance Expenses','Interest Expense','Meal Entertainment & Meetings','Office & Warehouse Supplies','Payroll expenses','misc expenses'];
 const EXPENSE_CHILDREN={
@@ -26,7 +37,7 @@ function validateParent(store,group,parentId,id,active){
 }
 export function accountParentOptions(store,group,id=null,active=true){return store.accounts.filter(a=>{if(a.group!==group)return false;try{validateParent(store,group,a.id,id,active);return true;}catch{return false;}});}
 export function createInitialAccounts(){
- return [...CASH_NAMES.map((name,index)=>({id:`CASH-${String(index+1).padStart(3,'0')}`,name,kind:index<8?'petty_cash':'bank',group:'cash_bank',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...INVENTORY_NAMES.map((name,index)=>({id:`INV-ASSET-${String(index+1).padStart(3,'0')}`,name,kind:'inventory_asset',group:'inventory_asset',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...initialExpenses(),...initialLiabilities(),...INVENTORY_NAMES.map((name,index)=>({id:`COGS-${String(index+1).padStart(3,'0')}`,name,kind:'cogs',group:'cogs',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]}))];
+ return [...CASH_ACCOUNTS.map(account=>({...account,group:'cash_bank',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...INVENTORY_NAMES.map((name,index)=>({id:`INV-ASSET-${String(index+1).padStart(3,'0')}`,name,kind:'inventory_asset',group:'inventory_asset',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...initialExpenses(),...initialLiabilities(),...INVENTORY_NAMES.map((name,index)=>({id:`COGS-${String(index+1).padStart(3,'0')}`,name,kind:'cogs',group:'cogs',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]}))];
 }
 const clean=v=>String(v??'').trim();
 const normalized=v=>clean(v).replace(/\s+/g,' ').toLocaleLowerCase('id-ID');
