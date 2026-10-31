@@ -1,6 +1,6 @@
 # Accounting account master (client-side demo)
 
-Accounting contains separate Cash / Bank, Accounts Receiveable, Accounts Payable, Inventory Assets, Fixed Assets, COGS / HPP, Expenses and Other Current Liabilities groups. Names preserve the user's spelling and capitalization.
+Accounting contains separate Cash / Bank, Accounts Receiveable, Accounts Payable, Inventory Assets, Fixed Assets, COGS / HPP, Expenses, Other Current Liabilities and Equity groups. Names preserve the user's spelling and capitalization.
 
 ## Cash / Bank
 
@@ -40,7 +40,7 @@ These are chart-of-account records separate from SKUs. No balances, opening valu
 
 Admin 1 simulation can add/edit names, types, optional bank details, notes and active status; Sales simulation is read-only. Cash/bank accounts can change type; existing bank details must be explicitly cleared before converting a bank account to petty cash. Inventory accounts remain in their original group. Names must be unique within their account group ignoring capitalization and repeated whitespace; the same label can exist in Inventory Asset and COGS as different accounts. Records retain stable IDs and in-memory edit history. No deletion is provided.
 
-Everything is page-session memory; reload restores the supplied 70 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
+Everything is page-session memory; reload restores the supplied 73 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
 
 ## Expenses
 
@@ -135,3 +135,16 @@ One control account `AP-001`, named **Accounts Payable**, classified `accounts_p
 The account page derives a read-only session summary grouped by exact supplier label, with each source bill ID, vendor bill reference, PO and date. It totals recorded goods bills and subtracts approved supplier-return credits only. Pending/rejected returns and customer credits are excluded. Fully returned bills stay visible at zero net. PO commitments and items not billed by the supplier do not generate payable values. BigInt aggregation keeps combined integer IDR amounts exact.
 
 All values are explicitly unposted demo bills less returns **before payments**, not final AP balances. Opening payables, settlements, due dates/aging, GL posting, bank reconciliation and payment integration remain unimplemented. No bills are marked paid, no tax/interest policy is inferred, and no external money movement is performed. The initial master now contains 64 accounts; transactional demo state still resets on reload.
+
+
+## Equity
+
+Three accounts, in the user's requested order and spelling:
+
+1. Penyesuaian Stok Opname
+2. Opening Balance Equity
+3. Retained Earnings
+
+Each is explicitly classified `equity` and belongs to the separate Equity group. These are three main accounts with stable IDs, not a parent/subaccount hierarchy. Admin 1 simulation can add/edit/search these records and set notes/active status, using existing same-group duplicate-name validation. Opening balances are unfilled, not presented as verified zeros.
+
+The requested classification is recorded only in the account master. No inventory-count adjustment, opening-balance balancing entry, year-end closing, retained-profit transfer or equity journal is generated. Existing stock/margin/reporting rules are unaffected, and no accounting/tax policy is inferred. Initial master count is 73; all remain session-based demo records, not a posted ledger or database migration.
