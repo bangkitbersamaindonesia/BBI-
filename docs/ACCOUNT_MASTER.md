@@ -1,6 +1,6 @@
 # Accounting account master (client-side demo)
 
-Accounting contains separate Cash / Bank, Accounts Receiveable, Inventory Assets, Fixed Assets, COGS / HPP, Expenses and Other Liabilities groups. Names preserve the user's spelling and capitalization.
+Accounting contains separate Cash / Bank, Accounts Receiveable, Accounts Payable, Inventory Assets, Fixed Assets, COGS / HPP, Expenses and Other Liabilities groups. Names preserve the user's spelling and capitalization.
 
 ## Cash / Bank
 
@@ -40,7 +40,7 @@ These are chart-of-account records separate from SKUs. No balances, opening valu
 
 Admin 1 simulation can add/edit names, types, optional bank details, notes and active status; Sales simulation is read-only. Cash/bank accounts can change type; existing bank details must be explicitly cleared before converting a bank account to petty cash. Inventory accounts remain in their original group. Names must be unique within their account group ignoring capitalization and repeated whitespace; the same label can exist in Inventory Asset and COGS as different accounts. Records retain stable IDs and in-memory edit history. No deletion is provided.
 
-Everything is page-session memory; reload restores the supplied 63 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
+Everything is page-session memory; reload restores the supplied 64 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
 
 ## Expenses
 
@@ -118,3 +118,12 @@ Three accounts, in the user's requested order and spelling:
 Each belongs to the separate Fixed Assets group, explicitly classified `fixed_asset`, with a stable ID and editable active status/notes. No parent hierarchy, bank details or SKU mapping is implied. The table leaves acquisition value unfilled. No purchase cost, acquisition date, useful life, salvage value, depreciation method/rate, accumulated depreciation or financial journal was assumed. Existing Depreciation expenses and all other account groups are unchanged.
 
 Initial session total is now 63 accounts, including these three fixed-asset accounts. This is still a session-based chart-of-accounts demo rather than a fixed-asset register, durable database or posted ledger.
+
+
+## Accounts Payable
+
+One control account `AP-001`, named **Accounts Payable**, classified `accounts_payable` / Utang usaha, represents vendor/supplier payables. Admin 1 simulation may edit its label/notes/status, but a second AP control record is blocked. It is separate from Other Liabilities loan accounts and AR customer receivables.
+
+The account page derives a read-only session summary grouped by exact supplier label, with each source bill ID, vendor bill reference, PO and date. It totals recorded goods bills and subtracts approved supplier-return credits only. Pending/rejected returns and customer credits are excluded. Fully returned bills stay visible at zero net. PO commitments and items not billed by the supplier do not generate payable values. BigInt aggregation keeps combined integer IDR amounts exact.
+
+All values are explicitly unposted demo bills less returns **before payments**, not final AP balances. Opening payables, settlements, due dates/aging, GL posting, bank reconciliation and payment integration remain unimplemented. No bills are marked paid, no tax/interest policy is inferred, and no external money movement is performed. The initial master now contains 64 accounts; transactional demo state still resets on reload.
