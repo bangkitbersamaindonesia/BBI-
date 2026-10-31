@@ -34,7 +34,7 @@ function initialIncome(){
  const base={kind:'income',group:'income',accountType:'income',currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true};
  const root={...base,id:'INCOME-ROOT',name:'Sales',parentId:null,history:[]};
  const children=['Dress Fashion','Bawahan','Blouse / Atasan','Gamis Anak','Gamis Dewasa','APD','Underwear','Misc'].map((name,index)=>({...base,id:`INCOME-${String(index+1).padStart(3,'0')}`,name,parentId:root.id,history:[]}));
- return [root,...children];
+ return [root,...children,{...base,id:'INCOME-UNCATEGORIZED',name:'Uncategorized Income',parentId:null,history:[]}];
 }
 export function accountDepth(accounts,account){let depth=0;const seen=new Set([account.id]);let parentId=account.parentId;while(parentId){if(seen.has(parentId))throw Error('Hierarki akun tidak boleh melingkar.');seen.add(parentId);const parent=accounts.find(a=>a.id===parentId);if(!parent)throw Error('Akun induk tidak ditemukan.');depth++;parentId=parent.parentId;}return depth;}
 function subtreeHeight(accounts,id,seen=new Set()){if(seen.has(id))throw Error('Hierarki akun tidak boleh melingkar.');const next=new Set(seen).add(id);const children=accounts.filter(a=>a.parentId===id);return children.length?1+Math.max(...children.map(a=>subtreeHeight(accounts,a.id,next))):0;}
