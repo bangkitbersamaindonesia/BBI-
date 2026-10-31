@@ -37,7 +37,7 @@ function validateParent(store,group,parentId,id,active){
 }
 export function accountParentOptions(store,group,id=null,active=true){return store.accounts.filter(a=>{if(a.group!==group)return false;try{validateParent(store,group,a.id,id,active);return true;}catch{return false;}});}
 export function createInitialAccounts(){
- return [...CASH_ACCOUNTS.map(account=>({...account,group:'cash_bank',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...INVENTORY_NAMES.map((name,index)=>({id:`INV-ASSET-${String(index+1).padStart(3,'0')}`,name,kind:'inventory_asset',group:'inventory_asset',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...initialExpenses(),...initialLiabilities(),...INVENTORY_NAMES.map((name,index)=>({id:`COGS-${String(index+1).padStart(3,'0')}`,name,kind:'cogs',group:'cogs',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]}))];
+ return [{id:'AR-001',name:'Accounts Receiveable',kind:'accounts_receivable',group:'accounts_receivable',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'Piutang toko / client',active:true,history:[]},...CASH_ACCOUNTS.map(account=>({...account,group:'cash_bank',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...INVENTORY_NAMES.map((name,index)=>({id:`INV-ASSET-${String(index+1).padStart(3,'0')}`,name,kind:'inventory_asset',group:'inventory_asset',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]})),...initialExpenses(),...initialLiabilities(),...INVENTORY_NAMES.map((name,index)=>({id:`COGS-${String(index+1).padStart(3,'0')}`,name,kind:'cogs',group:'cogs',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]}))];
 }
 const clean=v=>String(v??'').trim();
 const normalized=v=>clean(v).replace(/\s+/g,' ').toLocaleLowerCase('id-ID');
@@ -46,9 +46,10 @@ export function saveAccount(store,input,role,id=null){
  const existing=id?store.accounts.find(a=>a.id===id):null;if(id&&!existing)throw Error('Akun tidak ditemukan.');
  const name=clean(input.name);const kind=input.kind;
  if(!name||name.length>120)throw Error('Nama akun wajib diisi, maksimal 120 karakter.');
- if(!['petty_cash','bank','inventory_asset','expense','other_liability','cogs'].includes(kind))throw Error('Jenis akun tidak valid.');
- const group=kind==='cogs'?'cogs':kind==='other_liability'?'other_liability':kind==='expense'?'expense':kind==='inventory_asset'?'inventory_asset':'cash_bank';
+ if(!['petty_cash','bank','inventory_asset','expense','other_liability','cogs','accounts_receivable'].includes(kind))throw Error('Jenis akun tidak valid.');
+ const group=kind==='accounts_receivable'?'accounts_receivable':kind==='cogs'?'cogs':kind==='other_liability'?'other_liability':kind==='expense'?'expense':kind==='inventory_asset'?'inventory_asset':'cash_bank';
  if(store.accounts.some(a=>a.id!==id&&a.group===group&&normalized(a.name)===normalized(name)))throw Error('Nama akun sudah digunakan dalam kelompok ini.');
+ if(group==='accounts_receivable'&&!existing&&store.accounts.some(a=>a.group===group))throw Error('Akun piutang sudah tersedia; gunakan Ubah untuk memperbaruinya.');
  if(existing&&existing.group!==group)throw Error('Kelompok akun asal tidak dapat diubah.');
  const parentId=clean(input.parentId)||null;
  validateParent(store,group,parentId,id,input.active===true);

@@ -38,3 +38,5 @@
 .account-depth-2 td:first-child{padding-left:46px}
 
 .return-decision select{font:inherit;border:1px solid #dce4f0;border-radius:8px;padding:11px;background:#f8faff;color:#40516a;margin-bottom:12px}
+
+#account-receivables[hidden]{display:none}

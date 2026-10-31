@@ -1,6 +1,6 @@
 # Accounting account master (client-side demo)
 
-Accounting contains separate Cash / Bank, Inventory Asset, COGS / HPP, Expenses and Other Liabilities groups. Names preserve the user's spelling and capitalization.
+Accounting contains separate Cash / Bank, Accounts Receiveable, Inventory Asset, COGS / HPP, Expenses and Other Liabilities groups. Names preserve the user's spelling and capitalization.
 
 ## Cash / Bank
 
@@ -29,7 +29,7 @@ These are inventory asset account names, separate from individual SKUs. No SKU-t
 
 Admin 1 simulation can add/edit names, types, optional bank details, notes and active status; Sales simulation is read-only. Cash/bank accounts can change type; existing bank details must be explicitly cleared before converting a bank account to petty cash. Inventory accounts remain in their original group. Names must be unique within their account group ignoring capitalization and repeated whitespace; the same label can exist in Inventory Asset and COGS as different accounts. Records retain stable IDs and in-memory edit history. No deletion is provided.
 
-Everything is page-session memory; reload restores the supplied 58 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
+Everything is page-session memory; reload restores the supplied 59 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
 
 ## Expenses
 
@@ -86,3 +86,11 @@ These are master labels only. No loan balance, lender identity, interest rate, r
 Eight separate COGS accounts: Dress Fashion, Bawahan, Blouse / Atasan, APD, Gamis Anak, Gamis Dewasa, Underwear, misc. The labels intentionally match Inventory Asset, but these are distinct IDs and account groups. Name uniqueness is scoped to the group, so unchanged inventory/COGS accounts remain editable and same-group duplicates are rejected. No cross-group conversion is allowed on edit.
 
 COGS supports the same add/edit/search and active-status demo behavior, with no bank details or parent-account hierarchy. SKU/category-to-COGS mapping, opening balances, chart-of-accounts codes and financial postings have not been inferred. Existing invoice weighted-average cost and gross-margin calculations are unchanged; account masters do not automatically allocate those values to GL accounts. The initial session now restores 58 records: 10 cash/bank, 8 inventory asset, 8 COGS, 22 expenses and 10 Other Liabilities.
+
+## Accounts Receiveable
+
+One control account `AR-001`, named exactly **Accounts Receiveable**, is added in its own group (`accounts_receivable`, Piutang usaha), bringing the initial account count to 59. It represents store/client receivables. Names/details can be edited by Admin 1 simulation; a second control account in this group is blocked. Other account groups retain their existing data and IDs.
+
+The account page includes a read-only invoice-derived customer summary and source invoice list. It sums the session's created customer invoices, subtracts only approved customer return credits, preserves fully returned invoices as zero net, and excludes supplier credits and pending returns. Customer labels are grouped exactly as recorded; no identity merging is inferred without a customer master. BigInt totals preserve aggregate IDR precision.
+
+This is explicitly an **unposted demo invoice/return projection before payments**, not a final AR balance or ledger posting. All invoices are currently draft/session objects. Opening receivables, payments/settlements, due dates, aging, GL account mapping and debit/credit journals remain unimplemented. Nothing is treated as paid or overdue. No real financial transaction, bank integration, migration or server authorization was added. Reload restores the account master but discards transactional demo data.
