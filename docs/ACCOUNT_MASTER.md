@@ -1,6 +1,6 @@
 # Accounting account master (client-side demo)
 
-Accounting contains separate Cash / Bank, Accounts Receiveable, Accounts Payable, Inventory Assets, Fixed Assets, COGS / HPP, Expenses and Other Liabilities groups. Names preserve the user's spelling and capitalization.
+Accounting contains separate Cash / Bank, Accounts Receiveable, Accounts Payable, Inventory Assets, Fixed Assets, COGS / HPP, Expenses and Other Current Liabilities groups. Names preserve the user's spelling and capitalization.
 
 ## Cash / Bank
 
@@ -40,7 +40,7 @@ These are chart-of-account records separate from SKUs. No balances, opening valu
 
 Admin 1 simulation can add/edit names, types, optional bank details, notes and active status; Sales simulation is read-only. Cash/bank accounts can change type; existing bank details must be explicitly cleared before converting a bank account to petty cash. Inventory accounts remain in their original group. Names must be unique within their account group ignoring capitalization and repeated whitespace; the same label can exist in Inventory Asset and COGS as different accounts. Records retain stable IDs and in-memory edit history. No deletion is provided.
 
-Everything is page-session memory; reload restores the supplied 64 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
+Everything is page-session memory; reload restores the supplied 70 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
 
 ## Expenses
 
@@ -73,24 +73,32 @@ Expenses is a third master-account group, with stable parent IDs and a single su
 
 The Expenses group contains 22 records in addition to the cash/bank and inventory asset groups. All prior demo persistence/security limits still apply.
 
-## Other Liabilities
+## Loan Pinjaman — Other Current Liabilities
 
-Requested hierarchy (ten records):
+Latest replacement hierarchy (16 records), preserving exact requested spelling and order:
 
 - Loan Pinjaman
-  - Fema rak promosi
-  - tidak tahu siapa
+  - FEMA rak Minus
+  - KKB N 1369 IC
+  - KKB L 1809 VZ
   - Loan BN PAN
   - Loan Dan
   - Loan Her
-  - Loan Dav
-  - Loan KKB
-    - L 1809 VZ
-    - N 1369 IC
+  - Lon Dav
+  - Sundry Loan Staf Minus
+    - Don
+    - Lut
+    - Dip
+    - Agu
+    - Dwi
+    - Her
+    - Dan
 
-The last two accounts are children of Loan KKB, which is itself a child of Loan Pinjaman. Other Liabilities supports two subaccount levels under a root; Expenses retains its single subaccount level. Parent selectors only offer valid candidates in the same group. Save validation rejects cycles, self/descendant parenting, moves exceeding the group's depth limit, and active children under inactive ancestors. Recursive table/search preserves the full ancestry, including Loan Pinjaman → Loan KKB → vehicle. Existing account IDs are retained on edits and parent changes are included in edit history.
+The parent and descendants are explicitly classified `other_current_liability` / **Other Current Liabilities**. The existing internal group/kind identifier `other_liability` is retained for compatibility, and edits preserve the new classification. Recognizable renamed accounts keep their existing IDs. The vehicle accounts are directly under Loan Pinjaman, replacing the older Loan KKB intermediate parent. The unrequested old “tidak tahu siapa” entry is no longer seeded; no balances or identity transfers are inferred. Staff accounts have new stable IDs. “Lon Dav” and “FEMA rak Minus” are preserved as supplied; “Minus” is a label, not a fabricated negative balance.
 
-These are master labels only. No loan balance, lender identity, interest rate, repayment schedule, debt maturity, current/noncurrent classification, journal, or financial posting has been inferred. The label “tidak tahu siapa” remains exactly as supplied. Initial reload now restores 50 accounts: 10 cash/bank, 8 inventory asset, 22 expenses and 10 Other Liabilities. All remain session-based demo records.
+The table and parent selector support two subaccount levels, retain ancestor context in searches, and reject cycles, self/descendant parenting, cross-group parents and excessive depth. Active children require active ancestors. New accounts in this group default to Loan Pinjaman as parent. Existing expense/inventory hierarchy limits remain unchanged.
+
+No principal balance, lender identity, interest rate, maturity, repayment schedule, transaction, or journal was invented. This is an updated session-based master list, not a production loan migration. Reload restores 70 accounts in total: 10 cash/bank, 1 AR, 1 AP, 9 inventory assets, 3 fixed assets, 8 COGS, 22 expenses and 16 Other Current Liabilities.
 
 ## COGS / HPP
 

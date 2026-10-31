@@ -18,10 +18,11 @@ const EXPENSE_CHILDREN={
 };
 function initialExpenses(){return EXPENSE_NAMES.flatMap((name,index)=>{const id=`EXP-${String(index+1).padStart(3,'0')}`;const account={id,name,kind:'expense',group:'expense',parentId:null,currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true,history:[]};return [account,...(EXPENSE_CHILDREN[name]??[]).map((child,childIndex)=>({...account,id:`${id}-${childIndex+1}`,name:child,parentId:id,history:[]}))];});}
 function initialLiabilities(){
- const base={kind:'other_liability',group:'other_liability',currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true};
+ const base={kind:'other_liability',group:'other_liability',accountType:'other_current_liability',currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true};
  const root={...base,id:'LIAB-001',name:'Loan Pinjaman',parentId:null,history:[]};
- const children=['Fema rak promosi','tidak tahu siapa','Loan BN PAN','Loan Dan','Loan Her','Loan Dav','Loan KKB'].map((name,index)=>({...base,id:`LIAB-001-${index+1}`,name,parentId:root.id,history:[]}));
- return [root,...children,...['L 1809 VZ','N 1369 IC'].map((name,index)=>({...base,id:`LIAB-KKB-${index+1}`,name,parentId:children[6].id,history:[]}))];
+ const children=[['LIAB-001-1','FEMA rak Minus'],['LIAB-KKB-2','KKB N 1369 IC'],['LIAB-KKB-1','KKB L 1809 VZ'],['LIAB-001-3','Loan BN PAN'],['LIAB-001-4','Loan Dan'],['LIAB-001-5','Loan Her'],['LIAB-001-6','Lon Dav'],['LIAB-STAFF','Sundry Loan Staf Minus']].map(([id,name])=>({...base,id,name,parentId:root.id,history:[]}));
+ const staff=['Don','Lut','Dip','Agu','Dwi','Her','Dan'].map((name,index)=>({...base,id:`LIAB-STAFF-${index+1}`,name,parentId:'LIAB-STAFF',history:[]}));
+ return [root,...children,...staff];
 }
 function initialInventoryAssets(){
  const base={kind:'inventory_asset',group:'inventory_asset',accountType:'other_current_asset',currency:'IDR',bankName:'',accountNumber:'',notes:'',active:true};
@@ -39,7 +40,7 @@ function validateParent(store,group,parentId,id,active){
  const visited=new Set(id?[id]:[]);let current=parent;
  while(current){if(visited.has(current.id))throw Error('Akun tidak boleh menjadi induk dirinya sendiri atau keturunannya.');visited.add(current.id);if(current.group!==group)throw Error('Kelompok akun induk tidak sesuai.');if(active&&!current.active)throw Error('Subakun aktif harus memiliki seluruh akun induk aktif.');current=current.parentId?store.accounts.find(a=>a.id===current.parentId):null;}
  const depth=accountDepth(store.accounts,parent)+1;const height=id?subtreeHeight(store.accounts,id):0;
- if(depth+height>maxDepth)throw Error(group==='other_liability'?'Other Liabilities mendukung dua tingkat subakun di bawah akun utama.':`${group==='inventory_asset'?'Inventory Assets':'Expenses'} mendukung satu tingkat subakun.`);
+ if(depth+height>maxDepth)throw Error(group==='other_liability'?'Other Current Liabilities mendukung dua tingkat subakun di bawah akun utama.':`${group==='inventory_asset'?'Inventory Assets':'Expenses'} mendukung satu tingkat subakun.`);
 }
 export function accountParentOptions(store,group,id=null,active=true){return store.accounts.filter(a=>{if(a.group!==group)return false;try{validateParent(store,group,a.id,id,active);return true;}catch{return false;}});}
 export function createInitialAccounts(){
@@ -64,7 +65,7 @@ export function saveAccount(store,input,role,id=null){
  const bankName=kind==='bank'?clean(input.bankName):'';const accountNumber=kind==='bank'?clean(input.accountNumber):'';const notes=clean(input.notes);
  if(bankName.length>120||accountNumber.length>64||notes.length>500)throw Error('Nama bank maksimal 120, nomor rekening 64, dan keterangan 500 karakter.');
  if(existing?.kind==='bank'&&kind!=='bank'&&(existing.bankName||existing.accountNumber))throw Error('Kosongkan data bank terlebih dahulu sebelum mengubah jenis akun.');
- const value={name,kind,group,accountType:group==='fixed_asset'?'fixed_asset':group==='inventory_asset'?'other_current_asset':existing?.accountType??null,parentId,currency:'IDR',bankName,accountNumber,notes,active:input.active===true};
+ const value={name,kind,group,accountType:group==='other_liability'?'other_current_liability':group==='fixed_asset'?'fixed_asset':group==='inventory_asset'?'other_current_asset':existing?.accountType??null,parentId,currency:'IDR',bankName,accountNumber,notes,active:input.active===true};
  const at=new Date().toISOString();
  if(existing){const before={name:existing.name,kind:existing.kind,accountType:existing.accountType??null,parentId:existing.parentId??null,bankName:existing.bankName,accountNumber:existing.accountNumber,notes:existing.notes,active:existing.active};Object.assign(existing,value);existing.history.push({action:'Akun diperbarui',before,after:{...value},at});return existing;}
  const account={id:`ACCOUNT-DEMO-${String(store.accounts.length+1).padStart(3,'0')}`,...value,history:[{action:'Akun ditambahkan',after:{...value},at}]};store.accounts.push(account);return account;
