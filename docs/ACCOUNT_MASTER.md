@@ -1,6 +1,6 @@
 # Accounting account master (client-side demo)
 
-Accounting contains separate Cash / Bank, Accounts Receiveable, Accounts Payable, Inventory Assets, Fixed Assets, COGS / HPP, Expenses, Other Current Liabilities and Equity groups. Names preserve the user's spelling and capitalization.
+Accounting contains separate Cash / Bank, Accounts Receiveable, Accounts Payable, Inventory Assets, Fixed Assets, COGS / HPP, Income, Expenses, Other Current Liabilities and Equity groups. Names preserve the user's spelling and capitalization.
 
 ## Cash / Bank
 
@@ -40,7 +40,7 @@ These are chart-of-account records separate from SKUs. No balances, opening valu
 
 Admin 1 simulation can add/edit names, types, optional bank details, notes and active status; Sales simulation is read-only. Cash/bank accounts can change type; existing bank details must be explicitly cleared before converting a bank account to petty cash. Inventory accounts remain in their original group. Names must be unique within their account group ignoring capitalization and repeated whitespace; the same label can exist in Inventory Asset and COGS as different accounts. Records retain stable IDs and in-memory edit history. No deletion is provided.
 
-Everything is page-session memory; reload restores the supplied 73 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
+Everything is page-session memory; reload restores the supplied 82 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
 
 ## Expenses
 
@@ -148,3 +148,21 @@ Three accounts, in the user's requested order and spelling:
 Each is explicitly classified `equity` and belongs to the separate Equity group. These are three main accounts with stable IDs, not a parent/subaccount hierarchy. Admin 1 simulation can add/edit/search these records and set notes/active status, using existing same-group duplicate-name validation. Opening balances are unfilled, not presented as verified zeros.
 
 The requested classification is recorded only in the account master. No inventory-count adjustment, opening-balance balancing entry, year-end closing, retained-profit transfer or equity journal is generated. Existing stock/margin/reporting rules are unaffected, and no accounting/tax policy is inferred. Initial master count is 73; all remain session-based demo records, not a posted ledger or database migration.
+
+
+## Sales — Income
+
+The parent account **Sales** is explicitly classified `income` / **Income**, with eight child accounts in the requested order:
+
+1. Dress Fashion
+2. Bawahan
+3. Blouse / Atasan
+4. Gamis Anak
+5. Gamis Dewasa
+6. APD
+7. Underwear
+8. Misc
+
+The parent has ID `INCOME-ROOT`; the children have independent stable IDs. Matching labels in Inventory Assets or COGS remain separate account records. Income supports one subaccount level, active-parent/depth/cycle validation and ancestry-preserving search. Its add form defaults to Sales as parent. Admin 1 simulation can edit metadata and active status, using the existing account master behavior.
+
+No SKU/category revenue mapping, financial journals, recognition/tax policy, initial balances or automatic ledger posting is inferred. Existing customer invoice and margin calculations remain unchanged; this adds only chart-of-account records. Initial session total is now 82 records including nine Income accounts. The application remains a client-side session demo, not a posted ledger or database migration.

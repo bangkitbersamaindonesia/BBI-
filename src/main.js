@@ -89,7 +89,7 @@ function setPage(page){
   buttons.forEach(button=>{button.classList.toggle("active",button.dataset.page===page);button.setAttribute("aria-current",button.dataset.page===page?"page":"false");});
   pageTitle.textContent=isSku?"Master SKU":page;
   document.querySelector("#breadcrumb-active").textContent=page;
-  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Pesanan pelanggan dan pemeriksaan stok oleh Admin 1.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Analisis loss sales berdasarkan respons final supplier.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
+  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Pesanan pelanggan dan pemeriksaan stok oleh Admin 1.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Analisis loss sales berdasarkan respons final supplier.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, pendapatan, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
   dashboard.hidden=!isDashboard;
   placeholder.hidden=isDashboard || isSku || isSales || isPurchasing || isReports || isAccounting;
   if(!isDashboard) document.querySelector("#placeholder-title").textContent=page;
