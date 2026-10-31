@@ -1,6 +1,6 @@
 # Accounting account master (client-side demo)
 
-Accounting contains separate Cash / Bank, Accounts Receiveable, Inventory Assets, COGS / HPP, Expenses and Other Liabilities groups. Names preserve the user's spelling and capitalization.
+Accounting contains separate Cash / Bank, Accounts Receiveable, Inventory Assets, Fixed Assets, COGS / HPP, Expenses and Other Liabilities groups. Names preserve the user's spelling and capitalization.
 
 ## Cash / Bank
 
@@ -40,7 +40,7 @@ These are chart-of-account records separate from SKUs. No balances, opening valu
 
 Admin 1 simulation can add/edit names, types, optional bank details, notes and active status; Sales simulation is read-only. Cash/bank accounts can change type; existing bank details must be explicitly cleared before converting a bank account to petty cash. Inventory accounts remain in their original group. Names must be unique within their account group ignoring capitalization and repeated whitespace; the same label can exist in Inventory Asset and COGS as different accounts. Records retain stable IDs and in-memory edit history. No deletion is provided.
 
-Everything is page-session memory; reload restores the supplied 60 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
+Everything is page-session memory; reload restores the supplied 63 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
 
 ## Expenses
 
@@ -105,3 +105,16 @@ One control account `AR-001`, named exactly **Accounts Receiveable**, is added i
 The account page includes a read-only invoice-derived customer summary and source invoice list. It sums the session's created customer invoices, subtracts only approved customer return credits, preserves fully returned invoices as zero net, and excludes supplier credits and pending returns. Customer labels are grouped exactly as recorded; no identity merging is inferred without a customer master. BigInt totals preserve aggregate IDR precision.
 
 This is explicitly an **unposted demo invoice/return projection before payments**, not a final AR balance or ledger posting. All invoices are currently draft/session objects. Opening receivables, payments/settlements, due dates, aging, GL account mapping and debit/credit journals remain unimplemented. Nothing is treated as paid or overdue. No real financial transaction, bank integration, migration or server authorization was added. Reload restores the account master but discards transactional demo data.
+
+
+## Fixed Assets
+
+Three accounts, in the user's requested order and spelling:
+
+1. Mobil
+2. Furniture dan perlengkapan
+3. Laptop
+
+Each belongs to the separate Fixed Assets group, explicitly classified `fixed_asset`, with a stable ID and editable active status/notes. No parent hierarchy, bank details or SKU mapping is implied. The table leaves acquisition value unfilled. No purchase cost, acquisition date, useful life, salvage value, depreciation method/rate, accumulated depreciation or financial journal was assumed. Existing Depreciation expenses and all other account groups are unchanged.
+
+Initial session total is now 63 accounts, including these three fixed-asset accounts. This is still a session-based chart-of-accounts demo rather than a fixed-asset register, durable database or posted ledger.
