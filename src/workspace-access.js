@@ -1,5 +1,5 @@
-export const SALES_PAGES=['Sales','Sales Tools'];
-export const ADMIN_RESTRICTED_PAGES=['Dashboard','Accounting','Users','Reports'];
+export const SALES_PAGES=['Sales','Sales Tools','Sales Report'];
+export const ADMIN_RESTRICTED_PAGES=['Dashboard','Accounting','Users','Reports','Sales Report'];
 export function canAccessPage(user,page){
  if(!user?.active)return false;
  if(user.role==='sales')return SALES_PAGES.includes(page);
