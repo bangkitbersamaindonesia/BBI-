@@ -1,3 +1,4 @@
+import { mountInvoicePreview } from './invoice-preview.js';
 import { mountAccounts } from "./accounts.js";
 import { mountMarginReport } from "./margin.js";
 import { mountLossSales } from "./loss-sales.js";
@@ -112,3 +113,5 @@ mountLossSales(document.querySelector("#reports-content"));
 mountMarginReport(document.querySelector("#reports-content"));
 
 mountAccounts(document.querySelector("#accounting-content"));
+
+mountInvoicePreview();
