@@ -18,6 +18,7 @@ export function financialEntries(store){
  for(const p of store.payments??[]){const amount=BigInt(p.amount);add(p.date,p.id,p.type==='customer'?{['bank:'+p.accountId]:amount,ar:-amount}:{['bank:'+p.accountId]:-amount,ap:-amount});}
  for(const w of store.writeOffs??[]){const amount=BigInt(w.amount);add(w.date,w.id,w.type==='customer'?{ar:-amount,['expense:'+w.accountId]:amount}:{ap:-amount,['income:'+w.accountId]:amount});}
  for(const c of store.checks??[]){const amount=BigInt(c.amount);add(c.date,c.id,{['bank:'+c.bankAccountId]:-amount,...(c.expenseAccountId==='ASSET-PPN'?{ppn:-amount}:{['expense:'+c.expenseAccountId]:amount})});}
+ if(store.accounts?.find(a=>a.id==='ASSET-PPN')?.nonPosting){for(const entry of entries){delete entry.values.ppn;}}
  return entries;
 }
 export function financialReport(store,start,end){

@@ -180,3 +180,7 @@ Added Expenses / toko tidak bayar (EXP-BAD-DEBT) for customer residual write-off
 PPN (ASSET-PPN) belongs to Other Current Assets, separate from Inventory Assets. Its session movement detail adds PPN from finalized supplier bills, subtracts PPN from issued option-A invoices and subtracts Write Checks specifically targeting PPN. Other expense checks do not affect PPN. The seed now contains 87 accounts.
 
 Added tax expense (EXP-TAX) as the 17th top-level Expenses account, after toko tidak bayar. It is available in P&L and expense checks through the existing account-based lists; no automatic tax allocation is inferred. Expenses now has 17 main accounts and 7 subaccounts.
+
+## Latest revision: PPN is non-posting
+
+ASSET-PPN now has nonPosting=true. New Write Checks to this account are rejected and the account is excluded from destination choices. Source invoice/bill PPN amounts, payable/receivable totals and reference tax history remain; no new posting is allocated to PPN or an inferred replacement account. Financial report entries omit PPN and the Balance Sheet omits the non-posting asset row. The tax reference panel is explicitly not an account balance. As gross AR/AP still contain document tax, reconciliation may show an unallocated-tax difference until a posting account mapping is specified. Prior check records remain in source history rather than being silently deleted. This supersedes earlier direct PPN posting instructions.

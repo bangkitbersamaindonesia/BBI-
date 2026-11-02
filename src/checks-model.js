@@ -7,6 +7,7 @@ export function createCheck(store,input,role){
  if(role!=='admin3')throw Error('Hanya Admin 3 yang dapat membuat check pengeluaran.');
  const bank=store.accounts.find(a=>a.id===input.bankAccountId&&a.group==='cash_bank'&&a.active);if(!bank)throw Error('Pilih akun kas / bank aktif.');
  const expense=store.accounts.find(a=>a.id===input.expenseAccountId&&(a.group==='expense'||a.id==='ASSET-PPN')&&a.active);if(!expense)throw Error('Pilih akun / subakun expenses atau PPN aktif.');
+ if(expense.nonPosting)throw Error('Akun PPN non-posting tidak dapat digunakan untuk Write Check.');
  if(store.accounts.some(a=>a.parentId===expense.id&&a.active))throw Error('Pilih subakun expenses yang paling rinci.');
  const raw=String(input.amount??'').trim();if(!/^\d+$/.test(raw)||BigInt(raw)<=0n)throw Error('Nominal check harus rupiah bulat positif.');
  const reference=String(input.reference??'').trim();if(!reference||reference.length>120)throw Error('Isi nomor check (maksimal 120 karakter).');if((store.checks??[]).some(c=>c.reference.toLowerCase()===reference.toLowerCase()))throw Error('Nomor check sudah tercatat.');
