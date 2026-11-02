@@ -7,3 +7,5 @@ The portrait sheet is 210 × 297 mm. Print CSS requests A4 portrait with 12 mm m
 Real previews use invoice shipment snapshots and source SO details. Approved customer credits appear separately; the original invoice is preserved. Totals do not deduct payments. Purchase cost and gross margin are excluded from the customer document. Company address/contact, payment details and due date remain explicitly unfilled; no tax, discount or shipping policy is inferred. This is a draft client-side layout for user correction, not an issued invoice.
 
 The item table includes Diskon between Harga / pcs and Jumlah. Discounts are currently Rp 0 because transaction discount entry and calculation have not been configured; the existing invoice amounts are preserved.
+
+Per user request, DPP nilai lain2 appears below Sub total setelah retur and equals that subtotal × 11 / 12. BigInt arithmetic rounds the display to the nearest whole rupiah (half up). This display calculation does not change invoice totals or post tax/ledger entries.
