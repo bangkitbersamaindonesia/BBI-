@@ -12,13 +12,13 @@ export function recordSupplierResponse(store,poId,input,role) {
   if(!validDate(input.responseDate))throw new Error('Isi tanggal respons yang valid.');
   if(!Array.isArray(input.lines)||input.lines.length!==po.lines.length)throw new Error('Isi respons untuk setiap SKU PO.');
   const order=store.orders.find(o=>o.id===po.orderId);
-  if(!order || !WAREHOUSES.some(w=>w.id===po.warehouseId))throw new Error('Sumber SO atau gudang tidak ditemukan.');
+  if((!order&&po.purpose!=='stock_replenishment') || !WAREHOUSES.some(w=>w.id===po.warehouseId))throw new Error('Sumber SO atau gudang tidak ditemukan.');
   const seen=new Set(); let billTotal=0;let lossTotal=0;
   const lines=input.lines.map(raw=>{
     const original=po.lines.find(l=>l.sku===raw.sku);
-    const demand=order.lines.find(l=>l.sku===raw.sku);
+    const demand=order?.lines.find(l=>l.sku===raw.sku);
     const sale=demand??store.products.find(p=>p.sku===raw.sku);
-    const demandShortage=order.review?.find(l=>l.sku===raw.sku)?.shortage??0;
+    const demandShortage=order?.review?.find(l=>l.sku===raw.sku)?.shortage??0;
     if(!original||!sale||seen.has(raw.sku))throw new Error('SKU respons tidak valid atau duplikat.');
     seen.add(raw.sku);
     const qtyText=text(raw.fulfilledPcs);const priceText=text(raw.price);
@@ -38,15 +38,15 @@ export function recordSupplierResponse(store,poId,input,role) {
   if(billReference.length>120 || (supplied.length&&!billReference))throw new Error('Nomor tagihan supplier wajib untuk barang yang dipenuhi (maksimal 120 karakter).');
   if(supplied.length && store.bills.some(b=>b.supplier.toLowerCase()===po.supplier.toLowerCase() && b.reference.toLowerCase()===billReference.toLowerCase()))throw new Error('Nomor tagihan supplier ini sudah tercatat.');
   const at=new Date().toISOString();
-  const response={id:`RESP-DEMO-${String(store.responses.length+1).padStart(4,'0')}`,poId,orderId:order.id,date:input.responseDate,final:true,lines,at};
-  const bill=supplied.length?{id:`BILL-DEMO-${String(store.bills.length+1).padStart(4,'0')}`,reference:billReference,supplier:po.supplier,poId,orderId:order.id,responseId:response.id,date:input.responseDate,warehouseId:po.warehouseId,lines:supplied.map(l=>({sku:l.sku,quantityPcs:l.quantityPcs,price:l.price,subtotal:l.subtotal})),total:billTotal,status:'Tercatat · belum diposting',at}:null;
-  const losses=lines.filter(l=>l.lossPcs>0).map((l,index)=>({id:`LOSS-DEMO-${String(store.lossSales.length+index+1).padStart(4,'0')}`,responseId:response.id,poId,orderId:order.id,date:input.responseDate,customer:order.customer,salesperson:order.salesperson,supplier:po.supplier,warehouseId:po.warehouseId,sku:l.sku,name:l.name,size:l.size,color:l.color,quantityPcs:l.lossPcs,sellingPrice:l.sellingPrice,potentialRevenue:l.lostRevenue,reason:l.reason,at}));
+  const response={id:`RESP-DEMO-${String(store.responses.length+1).padStart(4,'0')}`,poId,orderId:order?.id??null,date:input.responseDate,final:true,lines,at};
+  const bill=supplied.length?{id:`BILL-DEMO-${String(store.bills.length+1).padStart(4,'0')}`,reference:billReference,supplier:po.supplier,poId,orderId:order?.id??null,responseId:response.id,date:input.responseDate,warehouseId:po.warehouseId,lines:supplied.map(l=>({sku:l.sku,quantityPcs:l.quantityPcs,price:l.price,subtotal:l.subtotal})),total:billTotal,status:'Tercatat · belum diposting',at}:null;
+  const losses=lines.filter(l=>l.lossPcs>0).map((l,index)=>({id:`LOSS-DEMO-${String(store.lossSales.length+index+1).padStart(4,'0')}`,responseId:response.id,poId,orderId:order?.id??null,date:input.responseDate,customer:order?.customer??'Pengisian stok gudang',salesperson:order?.salesperson??'',supplier:po.supplier,warehouseId:po.warehouseId,sku:l.sku,name:l.name,size:l.size,color:l.color,quantityPcs:l.lossPcs,sellingPrice:l.sellingPrice,potentialRevenue:l.lostRevenue,reason:l.reason,at}));
   // Validate everything before mutating any records so a failed response leaves no partial bill/loss.
   store.responses.push(response);if(bill)store.bills.push(bill);store.lossSales.push(...losses);
   po.response=response;po.status=losses.length?(bill?'Respons sebagian · ada loss sales':'Tidak tersedia · loss sales'):'Respons penuh';
   po.history.push({action:`Respons final supplier dicatat; ${bill?bill.id:'tanpa tagihan'}; ${losses.length} SKU loss sales`,at});
-  order.status=losses.length?'Ada loss sales':'Menunggu barang supplier';
-  order.history.push({action:`Respons final ${po.id}: ${losses.length} SKU loss sales; bukan bukti penerimaan barang`,at});
+  if(order)order.status=losses.length?'Ada loss sales':'Menunggu barang supplier';
+  if(order)order.history.push({action:`Respons final ${po.id}: ${losses.length} SKU loss sales; bukan bukti penerimaan barang`,at});
   return {response,bill,losses};
 }
 export function filterLossSales(records,filters={}) {
@@ -61,7 +61,7 @@ export function summarizeLossSales(records) {
     if(!groups.has(record.sku))groups.set(record.sku,{sku:record.sku,name:record.name,size:record.size,color:record.color,quantityPcs:0n,potentialRevenue:0n});
     const group=groups.get(record.sku);group.quantityPcs+=qty;group.potentialRevenue+=value;
   }
-  return {quantityPcs,potentialRevenue,grossPcs,recoveredPcs,orderCount:new Set(records.map(r=>r.orderId)).size,skuCount:groups.size,groups:[...groups.values()].sort((a,b)=>a.potentialRevenue===b.potentialRevenue?a.sku.localeCompare(b.sku):a.potentialRevenue>b.potentialRevenue?-1:1)};
+  return {quantityPcs,potentialRevenue,grossPcs,recoveredPcs,orderCount:new Set(records.map(r=>r.orderId).filter(Boolean)).size,skuCount:groups.size,groups:[...groups.values()].sort((a,b)=>a.potentialRevenue===b.potentialRevenue?a.sku.localeCompare(b.sku):a.potentialRevenue>b.potentialRevenue?-1:1)};
 }
 export function lossSalesCsv(records) {
   const cell=value=>{let s=String(value??'');if(/^[\s]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};

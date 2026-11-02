@@ -40,5 +40,11 @@ export function editPurchaseOrder(store,id,input,role){
 }
 export function purchaseOrderText(po){
  if(!po||po.status==='Draft'||!po.authorizedBy)throw Error('PO harus diotorisasi Admin 1 sebelum dicetak / diunduh.');
- return `PURCHASE ORDER DEMO\n${po.id}\nSupplier: ${po.supplier}\nSO: ${po.orderId}\nGudang: ${po.warehouseId}\nOtorisasi: ${po.authorizedBy}\nDiskon: ${po.discountPercent??0}%\nTerm of payment: ${po.paymentTerms??'Belum ditentukan'}\n\n${po.lines.map(l=>`${l.sku} | ${l.quantityPcs} pcs | Rp ${l.price}/pcs | Rp ${l.subtotal}`).join('\n')}\n\nTotal barang: Rp ${po.total}\nPengiriman ke supplier dilakukan di luar aplikasi demo.\n`;
+ return `PURCHASE ORDER DEMO\n${po.id}\nSupplier: ${po.supplier}\nSO: ${po.orderId??'Pengisian stok · tanpa SO'}\nGudang: ${po.warehouseId}\nOtorisasi: ${po.authorizedBy}\nDiskon: ${po.discountPercent??0}%\nTerm of payment: ${po.paymentTerms??'Belum ditentukan'}\n\n${po.lines.map(l=>`${l.sku} | ${l.quantityPcs} pcs | Rp ${l.price}/pcs | Rp ${l.subtotal}`).join('\n')}\n\nTotal barang: Rp ${po.total}\nPengiriman ke supplier dilakukan di luar aplikasi demo.\n`;
+}
+export function createStockPurchaseOrder(store,input,role){
+ if(role!=='admin1')throw Error('Hanya Admin 1 yang dapat membuat PO pengisian stok.');
+ const draft=structuredClone(store);const id=`PO-DEMO-${String(draft.purchaseOrders.length+1).padStart(4,'0')}`;
+ const po={id,orderId:null,purpose:'stock_replenishment',supplier:'',warehouseId:'',lines:[],total:0,status:'Draft',history:[{action:'Draft PO pengisian stok dibuat Admin 1 tanpa SO',at:new Date().toISOString()}]};
+ draft.purchaseOrders.push(po);editPurchaseOrder(draft,id,input,role);Object.assign(store,draft);return po;
 }
