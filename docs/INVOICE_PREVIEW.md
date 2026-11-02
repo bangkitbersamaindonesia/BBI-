@@ -17,3 +17,5 @@ Jumlah yang harus dibayar follows PPN 12% and equals Sub total setelah retur + P
 Payment note revised from user-supplied screenshot: BCA - Cab. Tunjungan Plaza 5, Surabaya; account 3636 - 07 - 9999; BANGKIT BERSAMA INDONESIA. The previous calculation disclaimer is replaced with the three boxed complaint/payment terms and thank-you text from that reference. These are invoice display details; bank master records are unchanged.
 
 Admin 2 simulation can select the invoice letterhead per invoice in session memory: A shows only PT Bangkit Bersama Indonesia, B shows only BBI. B is the default. Sales and Admin 1 cannot change the selection. Both choices retain the existing address/contact area and payment details.
+
+Option B uses account 3637-222-999, account name Danny. It omits DPP and PPN rows and replaces the post-return subtotal label with Jumlah yang harus dibayar, displaying the net goods amount after approved returns without adding PPN. Option A retains the corporate account and DPP/PPN calculations.
