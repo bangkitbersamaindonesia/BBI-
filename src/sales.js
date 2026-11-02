@@ -23,7 +23,7 @@ export function mountSales(salesRoot,purchasingRoot) {
   const roleControl=prefix=>`<div class="workflow-role"><label for="${prefix}-role">Peran simulasi</label><select id="${prefix}-role" class="role-select"><option value="sales">Sales</option><option value="admin1">Admin 1</option><option value="admin2">Admin 2</option></select><span>1. SO → 2. Stok / PO → 3. Tagihan / penerimaan → 4. Pengiriman / invoice</span></div>`;
   salesRoot.innerHTML=`${banner}${roleControl('sales')}<section class="panel" id="so-entry"><h2>Sales Order pelanggan</h2><p class="sku-guidance">Diisi oleh sales. Harga per pcs; 1 lusin = 12, kodi = 20, gros = 144 pcs.</p><form id="so-form"><div class="sku-form-grid">
     <label for="so-customer">Nama toko / pelanggan<input id="so-customer" name="customer" required maxlength="500" placeholder="PT / CV / nama toko" /></label>
-    <label for="so-salesperson">Nama sales<input id="so-salesperson" name="salesperson" required maxlength="500" /></label>
+    <label for="so-salesperson">Nama sales<select id="so-salesperson" name="salesperson" required><option value="">Pilih sales</option>${store.users.filter(u=>u.role==='sales'&&u.active).map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('')}</select></label>
     <label for="so-date">Tanggal kebutuhan<input id="so-date" name="deliveryDate" type="date" required /></label>
     <label class="sku-notes" for="so-address">Alamat kirim<textarea id="so-address" name="address" required maxlength="500" rows="2"></textarea></label>
     <label class="sku-notes" for="so-notes">Catatan pelanggan (opsional)<textarea id="so-notes" name="notes" maxlength="500" rows="2"></textarea></label>

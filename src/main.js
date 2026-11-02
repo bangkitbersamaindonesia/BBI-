@@ -1,3 +1,4 @@
+import { mountUsers } from './users.js';
 import { mountPayments } from './payments.js';
 import { mountInvoicePreview } from './invoice-preview.js';
 import { mountAccounts } from "./accounts.js";
@@ -16,6 +17,7 @@ const nav = [
   { icon:"↔", label:"Payments" },
   { icon:"▤", label:"Accounting" },
   { icon:"▥", label:"Reports" },
+  { icon:"♙", label:"Users" },
 ];
 const orders = [
   {id:"SO-2026-0048",customer:"PT Nusantara Fashion",category:"Kemeja Oxford · 420 pcs",value:"Rp 52.500.000",status:"Diproses",tone:"blue"},
@@ -65,7 +67,7 @@ app.innerHTML = `
       <section id="sales-content" hidden></section>
       <section id="purchasing-content" hidden></section>
       <section id="reports-content" hidden></section>
-      <section id="accounting-content" hidden></section><section id="payments-content" hidden></section>
+      <section id="accounting-content" hidden></section><section id="payments-content" hidden></section><section id="users-content" hidden></section>
       <section id="placeholder" hidden class="panel placeholder"><div class="placeholder-icon">◈</div><h2 id="placeholder-title"></h2><p>Modul ini akan dikembangkan pada tahap berikutnya. Dashboard saat ini hanya menampilkan data contoh.</p><button class="secondary-button" id="back-dashboard" type="button">Kembali ke Dashboard</button></section>
       <footer class="footer"><span>© 2026 BBI ERP · Garment Trading Management</span><span>Prototype v0.1 · Tanpa database</span></footer>
     </main>
@@ -80,6 +82,8 @@ const mobileToggle = document.querySelector("#menu-toggle");
 const sidebar = document.querySelector("#sidebar");
 function setPage(page){
   const isDashboard=page==="Dashboard";
+  const isUsers=page==="Users";
+  document.querySelector("#users-content").hidden=!isUsers;
   const isPayments=page==="Payments";
   document.querySelector("#payments-content").hidden=!isPayments;
   const isAccounting=page==="Accounting";
@@ -93,9 +97,9 @@ function setPage(page){
   buttons.forEach(button=>{button.classList.toggle("active",button.dataset.page===page);button.setAttribute("aria-current",button.dataset.page===page?"page":"false");});
   pageTitle.textContent=isSku?"Master SKU":page;
   document.querySelector("#breadcrumb-active").textContent=page;
-  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Sales Order, draft PO otomatis, dan penerbitan invoice customer oleh Admin 2.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Analisis loss sales berdasarkan respons final supplier.":isPayments?"Penerimaan customer, pembayaran supplier, dan penghapusan selisih oleh Admin 2.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, pendapatan, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
+  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Sales Order, draft PO otomatis, dan penerbitan invoice customer oleh Admin 2.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Analisis loss sales berdasarkan respons final supplier.":isUsers?"Daftar sales dan admin BBI.":isPayments?"Penerimaan customer, pembayaran supplier, dan penghapusan selisih oleh Admin 2.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, pendapatan, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
   dashboard.hidden=!isDashboard;
-  placeholder.hidden=isDashboard || isSku || isSales || isPurchasing || isReports || isAccounting || isPayments;
+  placeholder.hidden=isDashboard || isSku || isSales || isPurchasing || isReports || isAccounting || isPayments || isUsers;
   if(!isDashboard) document.querySelector("#placeholder-title").textContent=page;
   sidebar.classList.remove("open");mobileToggle.setAttribute("aria-expanded","false");
 }
@@ -120,3 +124,5 @@ mountAccounts(document.querySelector("#accounting-content"));
 mountInvoicePreview();
 
 mountPayments(document.querySelector("#payments-content"));
+
+mountUsers(document.querySelector("#users-content"));
