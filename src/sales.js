@@ -1,3 +1,4 @@
+import { issueCustomerInvoice } from './customer-invoice-model.js';
 import { finalizeBillDraft } from './bill-draft-model.js';
 import { submitSalesWorkflow, editPurchaseOrder, purchaseOrderText } from './workflow-model.js';
 import { poEditor, readEditor, handleEditor } from './workflow-editor.js';
@@ -85,7 +86,7 @@ export function mountSales(salesRoot,purchasingRoot) {
   });
   salesRoot.querySelector('#so-orders').addEventListener('change',e=>{if(e.target.matches('.dispatch-sub-sku')){const product=store.products.find(p=>p.sku===e.target.value);e.target.closest('.dispatch-line').querySelector('.dispatch-price').value=product?.sellingPrice??'';}});
   salesRoot.querySelector('#so-orders').addEventListener('submit',e=>{
-    const dispatchForm=e.target.closest('.customer-dispatch');if(dispatchForm){e.preventDefault();try{const result=dispatchCustomerOrder(store,dispatchForm.dataset.order,readDispatch(dispatchForm),role);notifyDemo();setMessage(salesRoot,`${result.shipment.id} dicatat. ${result.invoice?result.invoice.id+' otomatis sesuai barang dikirim.':'Tanpa invoice karena tidak ada barang dikirim.'}`);}catch(error){setMessage(salesRoot,error.message);}return;}
+    const dispatchForm=e.target.closest('.customer-dispatch');if(dispatchForm){e.preventDefault();try{const result=issueCustomerInvoice(store,dispatchForm.dataset.order,readDispatch(dispatchForm),role);notifyDemo();setMessage(salesRoot,`${result.shipment.id} dicatat. ${result.invoice?result.invoice.id+' otomatis sesuai barang dikirim.':'Tanpa invoice karena tidak ada barang dikirim.'}`);}catch(error){setMessage(salesRoot,error.message);}return;}
     const poForm=e.target.closest('.po-create');if(!poForm)return;e.preventDefault();
     try{const po=createPurchaseOrder(store,poForm.dataset.order,Object.fromEntries(new FormData(poForm)),role);notifyDemo();setMessage(salesRoot,`${po.id} dibuat untuk ${po.supplier}. Buka Purchasing untuk memeriksa dan mengunduh PO.`);}catch(error){setMessage(salesRoot,error.message);}
   });
