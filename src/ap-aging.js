@@ -1,0 +1,13 @@
+import {demoStore,subscribeDemo} from './demo-store.js';
+import {apAgingSummary,AGING_BUCKETS} from './ap-aging-model.js';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=v=>BigInt(v).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2});
+export function mountApAging(root){
+ root.innerHTML=`<section class="panel ar-aging"><form class="filter-panel"><label>As of<input type="date" name="asOf" required /></label></form><p role="alert" id="ap-aging-error"></p><div id="ap-aging-results"></div></section>`;
+ const form=root.querySelector('form');form.elements.asOf.value=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ function render(){const host=root.querySelector('#ap-aging-results');try{const report=apAgingSummary(demoStore,form.elements.asOf.value);root.querySelector('#ap-aging-error').textContent='';
+ const cells=values=>values.map(v=>`<td class="ar-amount">${money(v)}</td>`).join('');
+ host.innerHTML=`<header class="ar-aging-title"><h2>Bangkit Bersama Indonesia</h2><h3>A/P Aging Summary</h3><p>As of ${esc(new Intl.DateTimeFormat('en-US',{dateStyle:'long',timeZone:'UTC'}).format(new Date(report.asOf+'T00:00:00Z')))}</p></header><div class="table-scroll"><table class="ar-aging-table"><thead><tr><th>Vendor</th>${AGING_BUCKETS.map(b=>`<th>${b}</th>`).join('')}<th>TOTAL</th></tr></thead><tbody>${report.rows.map(row=>`<tr><th scope="row">${esc(row.name)}</th>${cells(row.buckets)}<td class="ar-amount"><strong>${money(row.total)}</strong></td></tr>`).join('')||'<tr><td colspan="7">Tidak ada saldo hutang pada tanggal ini.</td></tr>'}</tbody><tfoot><tr><th scope="row">TOTAL</th>${cells(report.totals)}<td class="ar-amount">${money(report.total)}</td></tr></tfoot></table></div><p class="sku-guidance">Mata uang IDR. Umur dihitung dari jatuh tempo; Current berarti belum lewat jatuh tempo. ${report.missingDueDates?`${report.missingDueDates} bill bersaldo belum memiliki jatuh tempo: umur sementara dihitung dari tanggal bill.`:''} Saldo mencakup PPN, dikurangi retur disetujui, pembayaran dan write-off sampai tanggal As of. Nilai negatif adalah kredit vendor dan mengikuti kelompok umur bill asal. PO tidak dihitung.</p><p class="cc-footnote">Data transaksi sesi demo; saldo awal / data pada gambar belum diimpor. Tanggal jatuh tempo tidak ditaksir dari termin vendor yang dapat berubah.</p>`;
+ }catch(error){root.querySelector('#ap-aging-error').textContent=error.message;host.innerHTML='';}}
+ form.addEventListener('change',render);form.addEventListener('submit',e=>e.preventDefault());subscribeDemo(render);render();
+}
