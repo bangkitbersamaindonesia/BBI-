@@ -10,7 +10,7 @@ export function mountFinancialReports(root){
  const row=(name,a,b,strong=false)=>`<tr${strong?' class="financial-total"':''}><td>${esc(name)}</td><td>${money(a)}</td><td>${money(b)}</td><td>${money(a-b)}</td></tr>`;
  const table=(title,rows)=>`<h3>${title}</h3><div class="table-scroll"><table class="financial-table"><thead><tr><th>POS LAPORAN</th><th>${esc(p.label)}</th><th>${esc(p.previousLabel)}</th><th>SELISIH</th></tr></thead><tbody>${rows}</tbody></table></div>`;
  let pl=row('Sales / pendapatan net',current.revenue,previous.revenue)+row('COGS / HPP',current.cogs,previous.cogs)+row('Laba kotor',current.grossProfit,previous.grossProfit,true)+row('Pendapatan lain',current.otherIncome,previous.otherIncome);
- for(const a of store.accounts.filter(a=>a.group==='expense')){const c=current.period['expense:'+a.id]??0n,prev=previous.period['expense:'+a.id]??0n;if(c||prev)pl+=row(a.name,c,prev);}
+ for(const a of store.accounts.filter(a=>a.group==='expense')){const c=current.period['expense:'+a.id]??0n,prev=previous.period['expense:'+a.id]??0n;const parent=a.parentId?store.accounts.find(p=>p.id===a.parentId):null;pl+=row(parent?parent.name+' → '+a.name:a.name,c,prev);}
  pl+=row('Total expenses',current.expenses,previous.expenses,true)+row('Laba / rugi bersih',current.netProfit,previous.netProfit,true);
  let bs='';for(const a of store.accounts.filter(a=>a.group==='cash_bank'))bs+=row(a.name,current.balances['bank:'+a.id]??0n,previous.balances['bank:'+a.id]??0n);
  for(const [name,key]of [['Accounts Receivable','ar'],['Inventory Assets','inventory'],['PPN · Other Current Asset','ppn']])bs+=row(name,current.balances[key]??0n,previous.balances[key]??0n);
