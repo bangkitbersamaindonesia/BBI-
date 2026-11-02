@@ -1,9 +1,10 @@
+import { documentTax } from './ppn-model.js';
 const sum=items=>items.reduce((s,r)=>s+BigInt(r.amount),0n);
 export function documentBalance(store,type,id){
  if(!['customer','supplier'].includes(type))throw Error('Jenis pembayaran tidak valid.');
  const doc=(type==='customer'?store.invoices:store.bills).find(d=>d.id===id);if(!doc)throw Error('Dokumen tidak ditemukan.');
  const original=BigInt(doc.total);const returns=store.credits.filter(c=>c.type===type&&c.sourceId===id).reduce((s,c)=>s+BigInt(c.total),0n);if(returns>original)throw Error('Retur melebihi dokumen asal.');
- const tax=v=>type==='customer'&&doc.letterhead==='A'?(((v*11n+6n)/12n)*12n+50n)/100n:0n;
+ const tax=v=>documentTax(type,doc,v);
  const total=original+tax(original),due=original-returns+tax(original-returns);
  const paid=sum((store.payments??[]).filter(p=>p.type===type&&p.sourceId===id));const writtenOff=sum((store.writeOffs??[]).filter(p=>p.type===type&&p.sourceId===id));
  const signed=due-paid-writtenOff;const remaining=signed>0n?signed:0n;

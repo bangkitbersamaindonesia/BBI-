@@ -34,6 +34,7 @@ export function finalizeBillDraft(store,poId,input,role){
  const sourceOrder=copy.orders.find(o=>o.id===po.orderId);if(sourceOrder)sourceOrder.status=result.losses.length?'Ada loss sales':'Menunggu barang supplier';
  if(po.purpose==='stock_replenishment')for(const loss of result.losses)loss.origin='stock_replenishment';
  draft.history.push({action:'Draft bills otomatis dari PO dicocokkan dan difinalisasi Admin 1',billLines:structuredClone(rows),at:new Date().toISOString()});
+ const taxRaw=String(input.ppnAmount??'0').trim();if(!/^\d+$/.test(taxRaw))throw Error('PPN bills harus rupiah bulat tidak negatif.');if(!bill&&BigInt(taxRaw)>0n)throw Error('PPN tidak dapat dicatat tanpa bills barang.');if(bill){bill.ppnAmount=BigInt(taxRaw).toString();bill.amountDue=(BigInt(bill.total)+BigInt(taxRaw)).toString();}
  if(bill)receiveSupplierGoods(copy,poId,'admin1');
  Object.assign(store,copy);return {...result,bill};
 }

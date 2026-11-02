@@ -40,7 +40,7 @@ These are chart-of-account records separate from SKUs. No balances, opening valu
 
 Admin 1 simulation can add/edit names, types, optional bank details, notes and active status; Sales simulation is read-only. Cash/bank accounts can change type; existing bank details must be explicitly cleared before converting a bank account to petty cash. Inventory accounts remain in their original group. Names must be unique within their account group ignoring capitalization and repeated whitespace; the same label can exist in Inventory Asset and COGS as different accounts. Records retain stable IDs and in-memory edit history. No deletion is provided.
 
-Everything is page-session memory; reload restores the supplied 85 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
+Everything is page-session memory; reload restores the supplied 86 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
 
 ## Expenses
 
@@ -165,7 +165,7 @@ The parent account **Sales** is explicitly classified `income` / **Income**, wit
 
 The parent has ID `INCOME-ROOT`; the children have independent stable IDs. Matching labels in Inventory Assets or COGS remain separate account records. Income supports one subaccount level, active-parent/depth/cycle validation and ancestry-preserving search. Its add form defaults to Sales as parent. Admin 1 simulation can edit metadata and active status, using the existing account master behavior.
 
-No SKU/category revenue mapping, financial journals, recognition/tax policy, initial balances or automatic ledger posting is inferred. Existing customer invoice and margin calculations remain unchanged; this adds only chart-of-account records. Initial session total is now 85 records including eleven Income accounts. The application remains a client-side session demo, not a posted ledger or database migration.
+No SKU/category revenue mapping, financial journals, recognition/tax policy, initial balances or automatic ledger posting is inferred. Existing customer invoice and margin calculations remain unchanged; this adds only chart-of-account records. Initial session total is now 86 records including eleven Income accounts. The application remains a client-side session demo, not a posted ledger or database migration.
 
 ## Uncategorized Income
 
@@ -173,4 +173,8 @@ Uncategorized Income is an active top-level Income account (ID `INCOME-UNCATEGOR
 
 ## Payment settlement accounts
 
-Added Expenses / toko tidak bayar (EXP-BAD-DEBT) for customer residual write-offs, and Income / misc expenses (INCOME-AP-WRITEOFF) for supplier residual write-offs, as requested. These are separate from the existing Expenses / misc expenses. Session seed total is 85 accounts. Payment records link to active cash/bank accounts and write-off records link to these account IDs; no production ledger posting is performed.
+Added Expenses / toko tidak bayar (EXP-BAD-DEBT) for customer residual write-offs, and Income / misc expenses (INCOME-AP-WRITEOFF) for supplier residual write-offs, as requested. These are separate from the existing Expenses / misc expenses. Session seed total is 86 accounts. Payment records link to active cash/bank accounts and write-off records link to these account IDs; no production ledger posting is performed.
+
+## PPN — Other Current Asset
+
+PPN (ASSET-PPN) belongs to Other Current Assets, separate from Inventory Assets. Its session movement detail adds PPN from finalized supplier bills, subtracts PPN from issued option-A invoices and subtracts Write Checks specifically targeting PPN. Other expense checks do not affect PPN. The seed now contains 86 accounts.
