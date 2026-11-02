@@ -1,3 +1,4 @@
+import { previewInvoiceAmounts } from './invoice-preview-model.js';
 import { submitOrder,reviewOrder,createPurchaseOrder } from './sales-model.js';
 import { WAREHOUSES } from './sku-model.js';
 // Build SO, reservation and shortage draft atomically. Authorization remains with Admin 1.
@@ -28,11 +29,16 @@ export function editPurchaseOrder(store,id,input,role){
   const subtotal=Number(qty)*Number(price);total+=subtotal;if(!Number.isSafeInteger(subtotal)||!Number.isSafeInteger(total))throw Error('Total PO melebihi batas aman.');
   return {sku:raw.sku,quantityPcs:Number(qty),price:Number(price),subtotal};
  });
- const before={supplier:po.supplier,warehouseId:po.warehouseId,lines:structuredClone(po.lines),total:po.total};
- Object.assign(po,{supplier,warehouseId:input.warehouseId,lines,total});
- po.history.push({action:'Draft PO diubah Admin 1 sebelum otorisasi',before,after:{supplier,warehouseId:po.warehouseId,lines:structuredClone(lines),total},at:new Date().toISOString()});return po;
+ const discountPercent=previewInvoiceAmounts({lines:[]},[],input.discountPercent??po.discountPercent??'0').percent;
+ const paymentTerms=String(input.paymentTerms??po.paymentTerms??'Belum ditentukan').trim();if(!paymentTerms||paymentTerms.length>500)throw Error('Isi term of payment (maksimal 500 karakter).');
+ const discounted=previewInvoiceAmounts({lines},[],discountPercent);
+ for(let i=0;i<lines.length;i++){lines[i].grossPrice=lines[i].price;lines[i].price=Number(discounted.lines[i].discountedPrice);lines[i].subtotal=Number(discounted.lines[i].discountedSubtotal);}
+ total=Number(discounted.total);if(!Number.isSafeInteger(total))throw Error('Total PO melebihi batas aman.');
+ const before={discountPercent:po.discountPercent,paymentTerms:po.paymentTerms,supplier:po.supplier,warehouseId:po.warehouseId,lines:structuredClone(po.lines),total:po.total};
+ Object.assign(po,{supplier,warehouseId:input.warehouseId,lines,total,discountPercent,paymentTerms});
+ po.history.push({action:'Draft PO diubah Admin 1 sebelum otorisasi',before,after:{discountPercent,paymentTerms,supplier,warehouseId:po.warehouseId,lines:structuredClone(lines),total},at:new Date().toISOString()});return po;
 }
 export function purchaseOrderText(po){
  if(!po||po.status==='Draft'||!po.authorizedBy)throw Error('PO harus diotorisasi Admin 1 sebelum dicetak / diunduh.');
- return `PURCHASE ORDER DEMO\n${po.id}\nSupplier: ${po.supplier}\nSO: ${po.orderId}\nGudang: ${po.warehouseId}\nOtorisasi: ${po.authorizedBy}\n\n${po.lines.map(l=>`${l.sku} | ${l.quantityPcs} pcs | Rp ${l.price}/pcs | Rp ${l.subtotal}`).join('\n')}\n\nTotal barang: Rp ${po.total}\nPengiriman ke supplier dilakukan di luar aplikasi demo.\n`;
+ return `PURCHASE ORDER DEMO\n${po.id}\nSupplier: ${po.supplier}\nSO: ${po.orderId}\nGudang: ${po.warehouseId}\nOtorisasi: ${po.authorizedBy}\nDiskon: ${po.discountPercent??0}%\nTerm of payment: ${po.paymentTerms??'Belum ditentukan'}\n\n${po.lines.map(l=>`${l.sku} | ${l.quantityPcs} pcs | Rp ${l.price}/pcs | Rp ${l.subtotal}`).join('\n')}\n\nTotal barang: Rp ${po.total}\nPengiriman ke supplier dilakukan di luar aplikasi demo.\n`;
 }

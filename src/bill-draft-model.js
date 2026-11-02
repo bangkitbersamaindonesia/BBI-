@@ -1,3 +1,4 @@
+import { receiveSupplierGoods } from './fulfillment-model.js';
 import { recordSupplierResponse } from './supplier-model.js';
 // Bill edits are validated on a copy so extra SKU validation cannot partially write a bill.
 export function finalizeBillDraft(store,poId,input,role){
@@ -32,5 +33,6 @@ export function finalizeBillDraft(store,poId,input,role){
  draft.status=result.losses.length?(bill?'Respons sebagian · ada loss sales':'Tidak tersedia · loss sales'):'Respons penuh';
  copy.orders.find(o=>o.id===po.orderId).status=result.losses.length?'Ada loss sales':'Menunggu barang supplier';
  draft.history.push({action:'Draft bills otomatis dari PO dicocokkan dan difinalisasi Admin 1',billLines:structuredClone(rows),at:new Date().toISOString()});
+ if(bill)receiveSupplierGoods(copy,poId,'admin1');
  Object.assign(store,copy);return {...result,bill};
 }

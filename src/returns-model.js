@@ -43,14 +43,14 @@ export function requestReturn(store,type,sourceId,input,role){
     if(!Number.isSafeInteger(subtotal)||!Number.isSafeInteger(total))throw Error('Nilai retur melebihi batas aman.');
     return {lineIndex,sku:original.sku,name:original.name??store.products.find(p=>p.sku===original.sku)?.name??original.sku,sourceSku:original.sourceSku??original.sku,quantityPcs,price:original.price,subtotal};
   });
-  const at=new Date().toISOString();const record={id:`RET-${type==='customer'?'C':'S'}-DEMO-${String(store.returns.length+1).padStart(4,'0')}`,type,sourceId,orderId:source.orderId,poId:source.poId??null,party:type==='customer'?source.customer:source.supplier,date:input.date,warehouseId:type==='customer'?null:input.warehouseId,requestedBy:text(input.requestedBy),reason:text(input.reason),lines,total,status:type==='customer'?'Menunggu Admin 2':'Menunggu Admin 1',history:[{action:`Diajukan oleh ${text(input.requestedBy)}`,at}]};
+  const at=new Date().toISOString();const record={id:`RET-${type==='customer'?'C':'S'}-DEMO-${String(store.returns.length+1).padStart(4,'0')}`,type,sourceId,orderId:source.orderId,poId:source.poId??null,party:type==='customer'?source.customer:source.supplier,date:input.date,warehouseId:type==='customer'?null:input.warehouseId,requestedBy:text(input.requestedBy),reason:text(input.reason),lines,total,status:'Menunggu Admin 1',history:[{action:`Diajukan oleh ${text(input.requestedBy)}`,at}]};
   store.returns.push(record);return record;
 }
 export function decideReturn(store,returnId,input,role){
   const record=store.returns.find(r=>r.id===returnId);
   if(!record)throw Error('Retur tidak ditemukan.');
-  const approver=record.type==='customer'?'Admin 2':'Admin 1';
-  if(role!==(record.type==='customer'?'admin2':'admin1'))throw Error(`Hanya ${approver} yang dapat memutuskan retur ini.`);
+  const approver='Admin 1';
+  if(role!==('admin1'))throw Error(`Hanya ${approver} yang dapat memutuskan retur ini.`);
   if(record.status!==`Menunggu ${approver}`)throw Error('Retur sudah diputuskan.');
   if(!['approve','reject'].includes(input.decision))throw Error('Pilih keputusan yang valid.');
   const note=text(input.note);if(!note||note.length>500)throw Error('Isi catatan keputusan (maksimal 500 karakter).');
@@ -58,7 +58,7 @@ export function decideReturn(store,returnId,input,role){
   if(input.decision==='reject'){record.status='Ditolak';record.history.push({action:`Ditolak ${approver}: ${note}`,at});return record;}
   if(input.physicalConfirmed!==true)throw Error(record.type==='customer'?'Konfirmasikan barang retur sudah diterima dan layak masuk stok.':'Konfirmasikan barang telah dikembalikan dan pengurangan tagihan disepakati supplier.');
   const warehouseId=record.type==='customer'?input.warehouseId:record.warehouseId;
-  if(!WAREHOUSES.some(w=>w.id===warehouseId))throw Error('Admin 2 harus memilih gudang penerima retur yang valid.');
+  if(!WAREHOUSES.some(w=>w.id===warehouseId))throw Error('Admin 1 harus memilih gudang penerima retur yang valid.');
   const source=sourceDocument(store,record.type,record.sourceId);
   const totals=adjustedDocumentTotal(store,record.type,record.sourceId);if(record.total>totals.net)throw Error('Nilai retur melebihi sisa tagihan dokumen.');
   const qtyBySku=new Map();
