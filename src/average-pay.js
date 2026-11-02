@@ -1,0 +1,8 @@
+import {demoStore,subscribeDemo} from './demo-store.js';
+import {averageDaysToPay} from './average-pay-model.js';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export function mountAveragePay(root){
+ root.innerHTML='<section class="panel ar-aging"><header class="ar-aging-title"><h2>Bangkit Bersama Indonesia</h2><h3>Average Days to Pay Summary</h3><p>All Transactions</p></header><div id="average-pay-results"></div><p class="sku-guidance">Rata-rata hari per invoice = jumlah hari dari tanggal invoice sampai pembayaran yang melunasi ÷ jumlah invoice yang memenuhi syarat. Pembayaran bertahap memakai tanggal pembayaran terakhir yang mencukupi tagihan setelah retur pada tanggal tersebut. Invoice belum lunas, lunas hanya karena retur, atau memiliki write-off tidak dihitung. Setiap invoice memiliki bobot sama; bukan rata-rata berbobot nominal.</p><p class="cc-footnote">Data transaksi sesi demo. All Transactions mencakup seluruh riwayat pembayaran yang tercatat pada sesi ini; data pada gambar belum diimpor.</p></section>';
+ function render(){const rows=averageDaysToPay(demoStore);root.querySelector('#average-pay-results').innerHTML=`<div class="table-scroll"><table class="average-pay-table"><thead><tr><th>Customer</th><th>Average Days to Pay</th></tr></thead><tbody>${rows.map(r=>`<tr><th scope="row">${esc(r.name)}</th><td title="${r.count} invoice lunas">${r.averageDays.toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`).join('')||'<tr><td colspan="2">Belum ada invoice yang dilunasi melalui pembayaran.</td></tr>'}</tbody></table></div>`;}
+ subscribeDemo(render);render();
+}

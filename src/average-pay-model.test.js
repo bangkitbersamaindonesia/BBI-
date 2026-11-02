@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {averageDaysToPay} from './average-pay-model.js';
+const base=()=>({invoices:[],payments:[],credits:[],writeOffs:[]});
+const invoice=(id,customer='A',total=100)=>({id,customer,date:'2026-01-01',total,letterhead:'B'});
+const payment=(id,date,amount=100)=>({sourceId:id,type:'customer',date,amount:String(amount)});
+test('Average weights invoices equally and uses final sufficient payment for installments',()=>{const s=base();s.invoices=[invoice('1'),invoice('2','a',1000)];s.payments=[payment('1','2026-01-11'),payment('2','2026-01-10',500),payment('2','2026-01-21',500)];const rows=averageDaysToPay(s);assert.equal(rows.length,1);assert.equal(rows[0].averageDays,15);assert.equal(rows[0].count,2);assert.equal(rows[0].documents[1].paidDate,'2026-01-21');});
+test('Excludes open invoices, write-offs and return-only settlement; handles same-day pay',()=>{const s=base();s.invoices=['open','wo','return','paid'].map(id=>invoice(id));s.payments=[payment('open','2026-01-02',50),payment('wo','2026-01-02',50),payment('paid','2026-01-01')];s.writeOffs=[{sourceId:'wo',type:'customer',date:'2026-01-02',amount:'50'}];s.credits=[{sourceId:'return',type:'customer',date:'2026-01-02',total:100}];const rows=averageDaysToPay(s);assert.equal(rows[0].count,1);assert.equal(rows[0].averageDays,0);});
+test('Payment must cover PPN and only credits available at payment date; future return cannot backdate settlement',()=>{const s=base();s.invoices=[{...invoice('1'),letterhead:'A'},invoice('2','B')];s.payments=[payment('1','2026-01-05',100),payment('1','2026-01-11',11),payment('2','2026-01-05',50)];s.credits=[{sourceId:'2',type:'customer',date:'2026-02-01',total:50}];const rows=averageDaysToPay(s);assert.equal(rows.length,1);assert.equal(rows[0].averageDays,10);});
+test('Approved return before final payment reduces required amount',()=>{const s=base();s.invoices=[invoice('1')];s.credits=[{sourceId:'1',type:'customer',date:'2026-01-02',total:20}];s.payments=[payment('1','2026-01-04',80)];assert.equal(averageDaysToPay(s)[0].averageDays,3);});
