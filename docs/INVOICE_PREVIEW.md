@@ -5,3 +5,5 @@ Open Sales → Lihat contoh invoice A4, or `/?invoice-preview` for the sample la
 The portrait sheet is 210 × 297 mm. Print CSS requests A4 portrait with 12 mm margins, removes application controls, repeats table headings, and avoids splitting item rows and totals/signatures. Longer invoices flow onto additional pages. Browser print settings may override paper/margins. Use Cetak / Simpan PDF to open the browser print dialog.
 
 Real previews use invoice shipment snapshots and source SO details. Approved customer credits appear separately; the original invoice is preserved. Totals do not deduct payments. Purchase cost and gross margin are excluded from the customer document. Company address/contact, payment details and due date remain explicitly unfilled; no tax, discount or shipping policy is inferred. This is a draft client-side layout for user correction, not an issued invoice.
+
+The item table includes Diskon between Harga / pcs and Jumlah. Discounts are currently Rp 0 because transaction discount entry and calculation have not been configured; the existing invoice amounts are preserved.
