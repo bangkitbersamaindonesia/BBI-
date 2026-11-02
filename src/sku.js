@@ -53,7 +53,7 @@ export function mountSku(root) {
       form.elements[Object.keys(errors)[0]].focus(); return;
     }
     const {quantityPcs, warehouseId, ...product} = value;
-    product.photos=photoPicker.commit();demoStore.products.push(product); demoStore.balances.push({sku:product.sku,warehouseId,quantityPcs});
+    product.photos=photoPicker.commit();demoStore.products.push(product);(demoStore.financialOpenings??=[]).push({id:'OPEN-SKU-'+product.sku,date:new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),amount:(BigInt(quantityPcs)*BigInt(product.purchasePrice)).toString()}); demoStore.balances.push({sku:product.sku,warehouseId,quantityPcs});
     form.reset(); render(); notifyDemo(); message.textContent=`SKU ${product.sku} berhasil ditambahkan ke demo.`;
   });
   const dialog=document.createElement('dialog');dialog.className='product-photo-dialog';root.append(dialog);

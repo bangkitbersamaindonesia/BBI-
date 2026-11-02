@@ -1,3 +1,4 @@
+import { mountFinancialReports } from './financial-reports.js';
 import { mountChecks } from './checks.js';
 import { mountUsers } from './users.js';
 import { mountPayments } from './payments.js';
@@ -98,7 +99,7 @@ function setPage(page){
   buttons.forEach(button=>{button.classList.toggle("active",button.dataset.page===page);button.setAttribute("aria-current",button.dataset.page===page?"page":"false");});
   pageTitle.textContent=isSku?"Master SKU":page;
   document.querySelector("#breadcrumb-active").textContent=page;
-  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Sales Order, draft PO otomatis, dan penerbitan invoice customer oleh Admin 2.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Analisis loss sales berdasarkan respons final supplier.":isUsers?"Daftar sales dan admin BBI.":isPayments?"Pembayaran customer/supplier oleh Admin 2 dan check pengeluaran oleh Admin 3.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, pendapatan, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
+  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Sales Order, draft PO otomatis, dan penerbitan invoice customer oleh Admin 2.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Balance Sheet, Profit & Loss, margin dan loss sales.":isUsers?"Daftar sales dan admin BBI.":isPayments?"Pembayaran customer/supplier oleh Admin 2 dan check pengeluaran oleh Admin 3.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, pendapatan, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
   dashboard.hidden=!isDashboard;
   placeholder.hidden=isDashboard || isSku || isSales || isPurchasing || isReports || isAccounting || isPayments || isUsers;
   if(!isDashboard) document.querySelector("#placeholder-title").textContent=page;
@@ -129,3 +130,5 @@ const settlementsRoot=document.createElement("div");document.querySelector("#pay
 mountUsers(document.querySelector("#users-content"));
 
 const checksRoot=document.createElement("div");document.querySelector("#payments-content").append(checksRoot);mountChecks(checksRoot);
+
+mountFinancialReports(document.querySelector("#reports-content"));

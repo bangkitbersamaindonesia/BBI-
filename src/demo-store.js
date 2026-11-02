@@ -11,6 +11,7 @@ export const demoStore = {
   payments: [], writeOffs: [], checks: [],
   orders: [], purchaseOrders: [], reservations: [], responses: [], bills: [], lossSales: [], receipts: [], shipments: [], invoices: [], recoveries: [], movements: [], returns: [], credits: [], costPools: {},
 };
+demoStore.financialOpenings=demoStore.balances.map((b,i)=>({id:'OPEN-DEMO-'+i,date:'1900-01-01',amount:(BigInt(b.quantityPcs)*BigInt(demoStore.products.find(p=>p.sku===b.sku).purchasePrice)).toString()}));
 const listeners = new Set();
 export function subscribeDemo(listener) { listeners.add(listener); }
 export function notifyDemo() { listeners.forEach(listener => listener()); }
