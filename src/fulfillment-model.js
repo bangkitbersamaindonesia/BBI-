@@ -12,7 +12,7 @@ export function receiveSupplierGoods(store,poId,role){
   for(const l of lines){const current=store.balances.find(b=>b.sku===l.sku&&b.warehouseId===po.warehouseId)?.quantityPcs??0;if(!Number.isSafeInteger(current+l.quantityPcs))throw Error('Stok melebihi batas aman.');}
   const receiptCosts=planReceiptCosts(store,lines);
   const at=new Date().toISOString();const receipt={id:`GR-DEMO-${store.receipts.length+1}`,poId,orderId:po.orderId,warehouseId:po.warehouseId,lines:lines.map(l=>({sku:l.sku,quantityPcs:l.quantityPcs})),at};
-  for(const l of lines){let b=store.balances.find(b=>b.sku===l.sku&&b.warehouseId===po.warehouseId);if(!b){b={sku:l.sku,warehouseId:po.warehouseId,quantityPcs:0};store.balances.push(b);}b.quantityPcs+=l.quantityPcs;store.reservations.push({orderId:po.orderId,sku:l.sku,warehouseId:po.warehouseId,quantityPcs:l.quantityPcs});store.movements.push({sourceId:receipt.id,kind:'receipt',sku:l.sku,warehouseId:po.warehouseId,quantityDelta:l.quantityPcs,at});}
+  for(const l of lines){let b=store.balances.find(b=>b.sku===l.sku&&b.warehouseId===po.warehouseId);if(!b){b={sku:l.sku,warehouseId:po.warehouseId,quantityPcs:0};store.balances.push(b);}b.quantityPcs+=l.quantityPcs;const demand=store.orders.find(o=>o.id===po.orderId)?.lines.find(item=>item.sku===l.sku)?.quantityPcs??0;const reserved=store.reservations.filter(r=>r.orderId===po.orderId&&r.sku===l.sku).reduce((s,r)=>s+r.quantityPcs,0);const allocate=Math.min(l.quantityPcs,Math.max(0,demand-reserved));if(allocate)store.reservations.push({orderId:po.orderId,sku:l.sku,warehouseId:po.warehouseId,quantityPcs:allocate});store.movements.push({sourceId:receipt.id,kind:'receipt',sku:l.sku,warehouseId:po.warehouseId,quantityDelta:l.quantityPcs,at});}
   commitCostPools(store,receiptCosts);
   store.receipts.push(receipt);po.history.push({action:`${receipt.id}: barang dikonfirmasi diterima dan dialokasikan ke SO`,at});return receipt;
 }
@@ -35,6 +35,15 @@ export function dispatchCustomerOrder(store,orderId,input,role){
     if(originalPcs){allocate(sale.sku,originalPcs,true);invoiceLines.push({sourceSku:sale.sku,sku:sale.sku,name:sale.name,size:sale.size,color:sale.color,quantityPcs:originalPcs,price:sale.price,subtotal:originalPcs*sale.price,substitution:false});}
     if(substitutePcs){const product=store.products.find(p=>p.sku===raw.substituteSku);if(!product||product.sku===sale.sku)throw Error('Pilih SKU pengganti berbeda yang valid.');if(input.customerApproved!==true)throw Error('Penggantian SKU memerlukan persetujuan pelanggan.');const price=integer(raw.substitutePrice,'Harga pengganti');allocate(product.sku,substitutePcs,false);invoiceLines.push({sourceSku:sale.sku,sku:product.sku,name:product.name,size:product.size,color:product.color,quantityPcs:substitutePcs,price,subtotal:substitutePcs*price,substitution:true});}
     fulfillments.push({sku:sale.sku,originalPcs,substitutePcs,substituteSku:substitutePcs?raw.substituteSku:null,remaining,reason});
+  }
+  if(input.additionalLines?.length){
+    if(input.customerApproved!==true)throw Error('Tambahan SKU invoice memerlukan persetujuan pelanggan.');
+    const extraSeen=new Set();
+    for(const raw of input.additionalLines){
+      const product=store.products.find(p=>p.sku===raw.sku);if(!product||extraSeen.has(raw.sku)||invoiceLines.some(l=>l.sku===raw.sku))throw Error('SKU tambahan tidak valid atau sudah ada di invoice.');extraSeen.add(raw.sku);
+      const qty=integer(raw.quantityPcs,'Qty tambahan');if(!qty)throw Error('Qty tambahan harus positif.');const price=integer(raw.price,'Harga tambahan');
+      allocate(product.sku,qty,false);invoiceLines.push({sourceSku:null,sku:product.sku,name:product.name,size:product.size,color:product.color,quantityPcs:qty,price,subtotal:qty*price,substitution:false,additional:true});
+    }
   }
   for(const line of invoiceLines){total+=line.subtotal;if(!Number.isSafeInteger(line.subtotal)||!Number.isSafeInteger(total))throw Error('Nilai invoice melebihi batas aman.');}
   for(const p of planned){const b=store.balances.find(b=>b.sku===p.sku&&b.warehouseId===p.warehouseId);if(!b||b.quantityPcs<claimed(p.sku,p.warehouseId))throw Error('Stok fisik tidak cukup.');}

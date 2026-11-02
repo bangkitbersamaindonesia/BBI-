@@ -69,5 +69,7 @@ export function readyPurchaseOrder(store,id,role) {
   requireRole(role,'admin1');
   const po=store.purchaseOrders.find(p=>p.id===id);
   if (!po || po.status!=='Draft') throw new Error('Hanya draft PO yang dapat ditandai siap.');
+  if(!po.supplier?.trim())throw Error('Pilih supplier dan simpan draft PO sebelum otorisasi.');
+  po.authorizedBy='Admin 1';po.authorizedAt=new Date().toISOString();
   po.status='Siap dikirim'; po.history.push({action:'Ditandai siap dikirim oleh Admin 1 (belum dikirim)',at:new Date().toISOString()}); return po;
 }
