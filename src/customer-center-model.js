@@ -1,0 +1,28 @@
+import { documentTax } from './ppn-model.js';
+import { documentBalance } from './payments-model.js';
+export const customerKey=name=>String(name??'').trim().toLocaleLowerCase('id-ID');
+export function customerDirectory(store){
+ const entries=new Map((store.customers??[]).map(c=>[customerKey(c.name),{...c,balance:0n}]));
+ for(const doc of [...store.orders,...store.invoices]){const key=customerKey(doc.customer);if(!key)continue;if(!entries.has(key))entries.set(key,{name:doc.customer,active:true,address:doc.address??'',balance:0n});else if(!entries.get(key).address&&doc.address)entries.get(key).address=doc.address;}
+ for(const invoice of store.invoices){const balance=documentBalance(store,'customer',invoice.id);entries.get(customerKey(invoice.customer)).balance+=balance.remaining-balance.creditBalance;}
+ return [...entries.values()].sort((a,b)=>a.name.localeCompare(b.name,'id'));
+}
+export function saveCustomer(store,input,originalName=null){
+ const name=String(input.name??'').trim();if(!name||name.length>200)throw Error('Nama toko / customer wajib diisi (maksimal 200 karakter).');
+ if(originalName&&name!==originalName)throw Error('Nama customer yang tersimpan tidak dapat diubah agar tautan transaksi tetap konsisten.');
+ const fields=['contact','mobile','email','terms','address','notes'];const row={name,active:input.active!==false};
+ for(const field of fields){row[field]=String(input[field]??'').trim();if(row[field].length>1000)throw Error('Isian maksimal 1.000 karakter.');}
+ if(row.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email))throw Error('Format email tidak valid.');
+ const key=customerKey(name);store.customers??=[];const index=store.customers.findIndex(c=>customerKey(c.name)===key);
+ if(!originalName&&customerDirectory(store).some(c=>customerKey(c.name)===key))throw Error('Customer sudah ada. Pilih customer lalu edit informasinya.');
+ if(index>=0)store.customers[index]=row;else store.customers.push(row);return row;
+}
+export function customerTransactions(store,name){
+ const key=customerKey(name),rows=[],invoices=store.invoices.filter(i=>customerKey(i.customer)===key),ids=new Set(invoices.map(i=>i.id));
+ for(const o of store.orders.filter(o=>customerKey(o.customer)===key))rows.push({type:'Sales Order',id:o.id,date:o.date??o.history?.[0]?.at?.slice(0,10)??'',account:'Sales Orders',amount:BigInt(o.total),status:o.status??'',open:false});
+ for(const i of invoices){const b=documentBalance(store,'customer',i.id);rows.push({type:'Invoice',id:i.id,date:i.date,account:'Accounts Receivable',amount:b.total,status:b.status,open:b.remaining>0n});}
+ // Credits include the PPN reversal implied by the original invoice, matching AR.
+ for(const i of invoices){const credits=store.credits.filter(c=>c.type==='customer'&&c.sourceId===i.id).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));let returned=0n;for(const c of credits){const before=BigInt(i.total)-returned;returned+=BigInt(c.total);const after=BigInt(i.total)-returned;const amount=BigInt(c.total)+documentTax('customer',i,before)-documentTax('customer',i,after);rows.push({type:'Retur / Credit',id:c.id,date:c.date,account:'Accounts Receivable',amount:-amount,status:'Disetujui',open:false});}}
+ for(const [source,type]of [[store.payments??[],'Payment'],[store.writeOffs??[],'Write-off']])for(const p of source.filter(p=>p.type==='customer'&&ids.has(p.sourceId)))rows.push({type,id:p.id,date:p.date,account:store.accounts.find(a=>a.id===p.accountId)?.name??p.accountId,amount:-BigInt(p.amount),status:p.reference??'',open:false});
+ return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date))||a.id.localeCompare(b.id));
+}
