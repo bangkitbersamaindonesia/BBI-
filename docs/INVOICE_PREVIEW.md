@@ -11,3 +11,5 @@ The item table includes Diskon between Harga / pcs and Jumlah. Discounts are cur
 Per user request, DPP nilai lain2 appears below Sub total setelah retur and equals that subtotal × 11 / 12. BigInt arithmetic rounds the display to the nearest whole rupiah (half up). This display calculation does not change invoice totals or post tax/ledger entries.
 
 Per user request, PPN 12% appears below DPP nilai lain2 and equals the displayed DPP × 12%, rounded half up to whole rupiah with BigInt arithmetic. It is a preview calculation only; invoice transaction totals and ledger posting are unchanged.
+
+Jumlah yang harus dibayar follows PPN 12% and equals Sub total setelah retur + PPN 12%, styled in blue using the same subtotal emphasis. This preview amount does not deduct customer payments or change transaction/ledger totals.
