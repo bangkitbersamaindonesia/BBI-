@@ -1,0 +1,12 @@
+import {demoStore,subscribeDemo} from './demo-store.js';
+import {arAgingSummary} from './ar-aging-model.js';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=v=>BigInt(v).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2});
+export function mountCustomerBalance(root){
+ root.innerHTML='<section class="panel ar-aging"><form class="filter-panel"><label>As of<input type="date" name="asOf" required /></label></form><p role="alert" id="customer-balance-error"></p><div id="customer-balance-results"></div></section>';
+ const form=root.querySelector('form');form.elements.asOf.value=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ function render(){const host=root.querySelector('#customer-balance-results');try{const report=arAgingSummary(demoStore,form.elements.asOf.value);root.querySelector('#customer-balance-error').textContent='';const label=new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'2-digit',timeZone:'UTC'}).format(new Date(report.asOf+'T00:00:00Z'));const rows=report.rows.filter(r=>r.total!==0n);
+ host.innerHTML=`<header class="ar-aging-title"><h2>Bangkit Bersama Indonesia</h2><h3>Customer Balance Summary</h3><p>All Transactions</p></header><div class="table-scroll"><table class="average-pay-table"><thead><tr><th>Customer</th><th>${esc(label)}</th></tr></thead><tbody>${rows.map(row=>`<tr><th scope="row">${esc(row.name)}</th><td>${money(row.total)}</td></tr>`).join('')||'<tr><td colspan="2">Tidak ada saldo piutang pada tanggal ini.</td></tr>'}</tbody><tfoot><tr><th scope="row">TOTAL</th><td>${money(report.total)}</td></tr></tfoot></table></div><p class="sku-guidance">Mata uang IDR. All Transactions mencakup invoice sampai tanggal As of, termasuk PPN, dikurangi retur disetujui, pembayaran dan write-off sampai tanggal tersebut. Saldo negatif adalah kredit customer. Customer bersaldo nol tidak ditampilkan; SO belum menjadi piutang.</p><p class="cc-footnote">Data transaksi sesi demo; saldo awal dan angka pada gambar belum diimpor. Data hilang saat reload.</p>`;
+ }catch(error){root.querySelector('#customer-balance-error').textContent=error.message;host.innerHTML='';}}
+ form.addEventListener('change',render);form.addEventListener('submit',e=>e.preventDefault());subscribeDemo(render);render();
+}
