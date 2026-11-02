@@ -1,3 +1,4 @@
+import { finalizeBillDraft } from './bill-draft-model.js';
 import { submitSalesWorkflow, editPurchaseOrder, purchaseOrderText } from './workflow-model.js';
 import { poEditor, readEditor, handleEditor } from './workflow-editor.js';
 import { mountReturnHandlers } from './returns.js';
@@ -92,7 +93,7 @@ export function mountSales(salesRoot,purchasingRoot) {
   purchasingRoot.querySelector('#po-orders').addEventListener('submit',e=>{
     const edit=e.target.closest('.po-edit');if(edit){e.preventDefault();try{editPurchaseOrder(store,edit.dataset.po,{...Object.fromEntries(new FormData(edit)),lines:readEditor(edit)},role);notifyDemo();setMessage(purchasingRoot,'Draft PO disimpan. Periksa lalu otorisasi.');}catch(error){setMessage(purchasingRoot,error.message);}return;}
     const responseForm=e.target.closest('.supplier-response');if(!responseForm)return;e.preventDefault();
-    try{const result=recordSupplierResponse(store,responseForm.dataset.po,readSupplierResponse(responseForm),role);notifyDemo();setMessage(purchasingRoot,`Respons final tersimpan. ${result.bill?'Tagihan '+result.bill.reference+' dicatat.':'Tidak ada tagihan barang.'} ${result.losses.length} SKU dicatat sebagai loss sales; lihat Reports.`);}catch(error){setMessage(purchasingRoot,error.message);}
+    try{const result=finalizeBillDraft(store,responseForm.dataset.po,readSupplierResponse(responseForm),role);notifyDemo();setMessage(purchasingRoot,`Respons final tersimpan. ${result.bill?'Tagihan '+result.bill.reference+' dicatat.':'Tidak ada tagihan barang.'} ${result.losses.length} SKU dicatat sebagai loss sales; lihat Reports.`);}catch(error){setMessage(purchasingRoot,error.message);}
   });
   purchasingRoot.querySelector('#po-orders').addEventListener('click',e=>{
     const received=e.target.closest('[data-receive]');

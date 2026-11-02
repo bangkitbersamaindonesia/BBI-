@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { demoStore } from './demo-store.js';
+import { submitSalesWorkflow,editPurchaseOrder } from './workflow-model.js';
+import { readyPurchaseOrder } from './sales-model.js';
+import { finalizeBillDraft } from './bill-draft-model.js';
+import { receiveSupplierGoods } from './fulfillment-model.js';
+function setup(){const s=structuredClone(demoStore);const {po}=submitSalesWorkflow(s,{customer:'Toko',salesperson:'Sales',address:'Kediri',deliveryDate:'2026-11-02',lines:[{sku:'OXF-BLK-XL',qty:150,unit:'pcs',price:125000}]},'sales');editPurchaseOrder(s,po.id,{supplier:'Vendor',warehouseId:'besar',lines:po.lines},'admin1');readyPurchaseOrder(s,po.id,'admin1');return {s,po};}
+const input=lines=>({responseDate:'2026-11-02',billReference:'B-1',final:true,lines});
+test('edited bills record PO shortage and added SKU; receipt remains separate and adds exact stock',()=>{const {s,po}=setup();const r=finalizeBillDraft(s,po.id,input([{sku:'OXF-BLK-XL',quantityPcs:4,price:85000},{sku:'TSH-WHT-M',quantityPcs:3,price:35000}]),'admin1');assert.equal(r.losses[0].quantityPcs,2);assert.equal(r.bill.total,445000);assert.equal(s.balances.some(b=>b.warehouseId==='besar'),false);receiveSupplierGoods(s,po.id,'admin1');assert.equal(s.balances.find(b=>b.warehouseId==='besar'&&b.sku==='TSH-WHT-M').quantityPcs,3);assert.throws(()=>finalizeBillDraft(s,po.id,input([]),'admin1'));});
+test('deleted SKU becomes full loss; extra-only bills and excess same-SKU qty are supported',()=>{const {s,po}=setup();const r=finalizeBillDraft(s,po.id,input([{sku:'TSH-WHT-M',quantityPcs:2,price:35000}]),'admin1');assert.equal(r.losses[0].quantityPcs,6);assert.equal(r.bill.total,70000);receiveSupplierGoods(s,po.id,'admin1');const second=setup();const more=finalizeBillDraft(second.s,second.po.id,input([{sku:'OXF-BLK-XL',quantityPcs:8,price:85000}]),'admin1');assert.equal(more.bill.lines.length,1);assert.equal(more.bill.lines[0].quantityPcs,8);receiveSupplierGoods(second.s,second.po.id,'admin1');assert.equal(second.s.balances.find(b=>b.warehouseId==='besar').quantityPcs,8);});
+test('wrong role, duplicate or invalid added rows fail atomically',()=>{const {s,po}=setup();const before=structuredClone(s);for(const role of ['sales','admin2'])assert.throws(()=>finalizeBillDraft(s,po.id,input([]),role));assert.throws(()=>finalizeBillDraft(s,po.id,input([{sku:'missing',quantityPcs:1,price:1}]),'admin1'));assert.deepEqual(s,before);});

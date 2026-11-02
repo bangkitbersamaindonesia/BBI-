@@ -1,3 +1,4 @@
+import { editorRow, readEditor } from './workflow-editor.js';
 import { returnPanel } from './returns.js';
 import { demoStore as store } from './demo-store.js';
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -13,19 +14,13 @@ export function supplierPanel(po,role) {
     ${response.lines.some(l=>l.shortagePcs>0)?'<p class="loss-notice">Loss sales telah dicatat. Lihat menu Reports untuk rincian, filter, dan ekspor CSV.</p>':''}</section>`;
   }
   if(role!=='admin1'||po.status!=='Siap dikirim')return '';
-  return `<form class="supplier-response supplier-panel" data-po="${esc(po.id)}"><h2>Catat pengiriman final & tagihan supplier</h2><p class="sku-guidance">Admin 1 menyalin pengiriman final supplier. Isi qty sesuai bills; SKU yang tidak tercantum biarkan 0. sisa yang dipastikan tidak akan dikirim dicatat sebagai loss sales. Jika masih menunggu/backorder, jangan finalisasi.</p><div class="sku-form-grid"><label for="response-date-${po.id}">Tanggal respons final<input id="response-date-${po.id}" name="responseDate" type="date" required /></label><label for="bill-ref-${po.id}">Nomor tagihan supplier<input id="bill-ref-${po.id}" name="billReference" maxlength="120" placeholder="Wajib jika ada barang dipenuhi" /></label></div>
-    ${po.lines.map((l,index)=>`<fieldset class="response-line so-line" data-sku="${esc(l.sku)}"><legend>${esc(l.sku)} · PO ${num(l.quantityPcs)} pcs</legend><div class="sku-form-grid"><label for="fulfilled-${po.id}-${index}">Qty dikirim supplier (pcs)<input id="fulfilled-${po.id}-${index}" class="response-qty" type="number" min="0" max="${l.quantityPcs}" step="1" required value="0" data-ordered="${l.quantityPcs}" /></label><label for="bill-price-${po.id}-${index}">Harga tagihan (Rp / pcs)<input id="bill-price-${po.id}-${index}" class="response-price" type="number" min="0" step="1" required value="${l.price}" /></label><label for="reason-${po.id}-${index}">Alasan barang tidak tersedia<input id="reason-${po.id}-${index}" class="response-reason" value="Tidak tercantum / tidak tersedia pada bills supplier" maxlength="500" placeholder="Wajib jika ada sisa tidak dikirim" /></label></div></fieldset>`).join('')}
-    <p class="response-preview selected-range" aria-live="polite">Lengkapi qty respons setiap SKU.</p><label class="response-confirm"><input type="checkbox" name="final" required /> Respons ini final; sisa qty tidak akan dikirim supplier dan dicatat sebagai loss sales.</label><p class="sku-guidance">Pencatatan final hanya sekali dalam demo. Pastikan qty dan harga sesuai respons/tagihan supplier.</p><button class="primary-button" type="submit">Simpan respons final & catat loss sales</button></form>`;
+  return `<form class="supplier-response supplier-panel" data-po="${esc(po.id)}"><h2>Draft bills otomatis dari PO</h2><p class="sku-guidance">Draft terisi otomatis sesuai PO. Admin 1 mencocokkan jenis SKU, qty, dan harga dengan bills supplier. Hapus SKU yang tidak tersedia atau tambahkan SKU sesuai bills. Selisih kurang PO dengan bills final dicatat sebagai loss sales.</p><div class="sku-form-grid"><label for="response-date-${po.id}">Tanggal respons final<input id="response-date-${po.id}" name="responseDate" type="date" required /></label><label for="bill-ref-${po.id}">Nomor tagihan supplier<input id="bill-ref-${po.id}" name="billReference" maxlength="120" placeholder="Wajib jika ada barang dipenuhi" /></label></div>
+    <div class="editable-items">${po.lines.map(l=>editorRow(l,'bill')).join('')}</div><button type="button" class="secondary-button" data-add-edit="bill">+ Tambah SKU bills</button>
+    <p class="response-preview selected-range" aria-live="polite">Lengkapi qty respons setiap SKU.</p><label class="response-confirm"><input type="checkbox" name="final" required /> Respons ini final; sisa qty tidak akan dikirim supplier dan dicatat sebagai loss sales.</label><p class="sku-guidance">Pencatatan final hanya sekali dalam demo. Pastikan qty dan harga sesuai respons/tagihan supplier.</p><button class="primary-button" type="submit">Finalisasi bills & catat selisih loss sales</button></form>`;
 }
 export function readSupplierResponse(form) {
-  return {responseDate:form.elements.responseDate.value,billReference:form.elements.billReference.value,final:form.elements.final.checked,lines:[...form.querySelectorAll('.response-line')].map(line=>({sku:line.dataset.sku,fulfilledPcs:line.querySelector('.response-qty').value,price:line.querySelector('.response-price').value,reason:line.querySelector('.response-reason').value}))};
+ return {responseDate:form.elements.responseDate.value,billReference:form.elements.billReference.value,final:form.elements.final.checked,lines:readEditor(form)};
 }
 export function previewSupplierResponse(form) {
-  let total=0n,loss=0n;let valid=true;
-  for(const line of form.querySelectorAll('.response-line')){
-    const qty=line.querySelector('.response-qty');const price=line.querySelector('.response-price').value;
-    if(!/^\d+$/.test(qty.value)||!/^\d+$/.test(price)||!Number.isSafeInteger(Number(qty.value))||!Number.isSafeInteger(Number(price))||Number(qty.value)>Number(qty.dataset.ordered)){valid=false;break;}
-    total+=BigInt(qty.value)*BigInt(price);loss+=BigInt(qty.dataset.ordered)-BigInt(qty.value);
-  }
-  form.querySelector('.response-preview').textContent=valid?`Total barang ditagih: ${money(total)} · Loss sales: ${num(loss)} pcs (akan dicatat setelah finalisasi).`:'Lengkapi qty pcs dan harga rupiah bulat yang valid.';
+ try{const rows=readEditor(form);let total=0n;for(const r of rows){if(!/^\d+$/.test(r.quantityPcs)||!/^\d+$/.test(r.price))throw Error();total+=BigInt(r.quantityPcs)*BigInt(r.price);}form.querySelector('.response-preview').textContent=`Total draft bills: ${money(total)} · Selisih PO dihitung saat finalisasi.`;}catch{form.querySelector('.response-preview').textContent='Lengkapi qty dan harga bills.';}
 }
