@@ -1,5 +1,5 @@
 import { demoStore as workspaceStore, clearDemoSubscriptions } from './demo-store.js';
-import { canAccessPage } from './workspace-access.js';
+import { canAccessPage, defaultWorkspacePage } from './workspace-access.js';
 import { mountSalesTools } from './sales-tools.js';
 import { mountFinancialReports } from './financial-reports.js';
 import { mountChecks } from './checks.js';
@@ -90,7 +90,7 @@ const pageSubtitle = document.querySelector("#page-subtitle");
 const mobileToggle = document.querySelector("#menu-toggle");
 const sidebar = document.querySelector("#sidebar");
 function setPage(page){
-  if(!canAccessPage(selectedUser,page))page=selectedUser?.role==='sales'?'Sales Tools':'Dashboard';
+  if(!canAccessPage(selectedUser,page))page=defaultWorkspacePage(selectedUser);
   const isSalesTools=page==='Sales Tools';document.querySelector("#sales-tools-content").hidden=!isSalesTools;
   const isDashboard=page==="Dashboard";
   const isUsers=page==="Users";
@@ -121,35 +121,37 @@ document.querySelector("#report-button").addEventListener("click",()=>setPage("R
 
 if(selectedUser){
  if(selectedUser.role!=='sales'){
-mountDashboardAnalytics();
+if(canAccessPage(selectedUser,'Dashboard'))mountDashboardAnalytics();
+else dashboard.replaceChildren();
 
 
 mountSku(document.querySelector("#sku-content"));
 
 mountSales(document.querySelector("#sales-content"), document.querySelector("#purchasing-content"));
 
+if(canAccessPage(selectedUser,'Reports')){
 mountLossSales(document.querySelector("#reports-content"));
 
 mountMarginReport(document.querySelector("#reports-content"));
+mountFinancialReports(document.querySelector("#reports-content"));
+}
 
-mountAccounts(document.querySelector("#accounting-content"));
+if(canAccessPage(selectedUser,'Accounting'))mountAccounts(document.querySelector("#accounting-content"));
 
 mountInvoicePreview();
 
 const settlementsRoot=document.createElement("div");document.querySelector("#payments-content").append(settlementsRoot);mountPayments(settlementsRoot);
 
-mountUsers(document.querySelector("#users-content"));
+if(canAccessPage(selectedUser,'Users'))mountUsers(document.querySelector("#users-content"));
 
 const checksRoot=document.createElement("div");document.querySelector("#payments-content").append(checksRoot);mountChecks(checksRoot);
-
-mountFinancialReports(document.querySelector("#reports-content"));
 
  }
  if(selectedUser.role==='sales')mountSales(document.querySelector('#sales-content'),document.querySelector('#purchasing-content'),selectedUser);
  mountSalesTools(document.querySelector('#sales-tools-content'));
- document.querySelector('#report-button').hidden=selectedUser.role==='sales';
+ document.querySelector('#report-button').hidden=!canAccessPage(selectedUser,'Reports');
  document.querySelector('#workspace-signout').onclick=()=>{sessionStorage.removeItem('bbi-demo-user');renderWorkspace();};
- setPage(selectedUser.role==='sales'?'Sales Tools':'Dashboard');
+ setPage(defaultWorkspacePage(selectedUser));
 }else{
  document.querySelector('.shell').hidden=true;
  const chooser=document.createElement('section');chooser.className='panel workspace-user-chooser';chooser.innerHTML='<h1>BBI Workspace</h1><p>Pilih user untuk simulasi akses. Ini belum merupakan login terautentikasi.</p><label>User demo<select id="workspace-user">'+workspaceStore.users.map(u=>'<option value="'+u.id+'">'+u.name+' · '+u.role+'</option>').join('')+'</select></label><button type="button" class="primary-button">Buka workspace demo</button>';app.append(chooser);chooser.querySelector('button').onclick=()=>{sessionStorage.setItem('bbi-demo-user',chooser.querySelector('select').value);renderWorkspace();};
