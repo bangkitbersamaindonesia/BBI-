@@ -1,3 +1,4 @@
+import { mountVendorCenter } from './vendor-center.js';
 import { mountCustomerCenter } from './customer-center.js';
 import { demoStore as workspaceStore, clearDemoSubscriptions } from './demo-store.js';
 import { canAccessPage, defaultWorkspacePage } from './workspace-access.js';
@@ -24,6 +25,7 @@ const nav = [
   { icon:"◈", label:"Purchasing" },
   { icon:"◉", label:"Sales" },
   { icon:"♧", label:"Customer Center" },
+  { icon:"◇", label:"Vendor Center" },
   { icon:"▦", label:"Sales Tools" },
   { icon:"↔", label:"Payments" },
   { icon:"▤", label:"Accounting" },
@@ -78,7 +80,7 @@ app.innerHTML = `
       <section id="sales-content" hidden></section>
       <section id="purchasing-content" hidden></section>
       <section id="reports-content" hidden></section>
-      <section id="accounting-content" hidden></section><section id="payments-content" hidden></section><section id="users-content" hidden></section><section id="sales-tools-content" hidden></section><section id="customer-center-content" hidden></section>
+      <section id="accounting-content" hidden></section><section id="payments-content" hidden></section><section id="users-content" hidden></section><section id="sales-tools-content" hidden></section><section id="customer-center-content" hidden></section><section id="vendor-center-content" hidden></section>
       <section id="placeholder" hidden class="panel placeholder"><div class="placeholder-icon">◈</div><h2 id="placeholder-title"></h2><p>Modul ini akan dikembangkan pada tahap berikutnya. Dashboard saat ini hanya menampilkan data contoh.</p><button class="secondary-button" id="back-dashboard" type="button">Kembali ke Dashboard</button></section>
       <footer class="footer"><span>© 2026 BBI ERP · Garment Trading Management</span><span>Prototype v0.1 · Tanpa database</span></footer>
     </main>
@@ -93,6 +95,7 @@ const mobileToggle = document.querySelector("#menu-toggle");
 const sidebar = document.querySelector("#sidebar");
 function setPage(page){
   if(!canAccessPage(selectedUser,page))page=defaultWorkspacePage(selectedUser);
+  const isVendorCenter=page==='Vendor Center';document.querySelector('#vendor-center-content').hidden=!isVendorCenter;
   const isCustomerCenter=page==='Customer Center';document.querySelector('#customer-center-content').hidden=!isCustomerCenter;
   const isSalesTools=page==='Sales Tools';document.querySelector("#sales-tools-content").hidden=!isSalesTools;
   const isDashboard=page==="Dashboard";
@@ -111,9 +114,9 @@ function setPage(page){
   buttons.forEach(button=>{button.classList.toggle("active",button.dataset.page===page);button.setAttribute("aria-current",button.dataset.page===page?"page":"false");});
   pageTitle.textContent=isSku?"Master SKU":page==='Sales'?'Sales Order':page;
   document.querySelector("#breadcrumb-active").textContent=page;
-  pageSubtitle.textContent=isCustomerCenter?"Informasi customer, saldo piutang dan riwayat transaksi.":isSalesTools?"Katalog produk dan harga jual untuk sales.":isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Sales Order, draft PO otomatis, dan penerbitan invoice customer oleh Admin 2.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Balance Sheet, Profit & Loss, margin dan loss sales.":isUsers?"Daftar sales dan admin BBI.":isPayments?"Pembayaran customer/supplier oleh Admin 2 dan check pengeluaran oleh Admin 3.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, pendapatan, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
+  pageSubtitle.textContent=isVendorCenter?"Informasi vendor / supplier, saldo hutang dan riwayat transaksi.":isCustomerCenter?"Informasi customer, saldo piutang dan riwayat transaksi.":isSalesTools?"Katalog produk dan harga jual untuk sales.":isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Sales Order, draft PO otomatis, dan penerbitan invoice customer oleh Admin 2.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Balance Sheet, Profit & Loss, margin dan loss sales.":isUsers?"Daftar sales dan admin BBI.":isPayments?"Pembayaran customer/supplier oleh Admin 2 dan check pengeluaran oleh Admin 3.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, pendapatan, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
   dashboard.hidden=!isDashboard;
-  placeholder.hidden=isDashboard || isSku || isSales || isPurchasing || isReports || isAccounting || isPayments || isUsers || isSalesTools || isCustomerCenter;
+  placeholder.hidden=isDashboard || isSku || isSales || isPurchasing || isReports || isAccounting || isPayments || isUsers || isSalesTools || isCustomerCenter || isVendorCenter;
   if(!isDashboard) document.querySelector("#placeholder-title").textContent=page;
   sidebar.classList.remove("open");mobileToggle.setAttribute("aria-expanded","false");
 }
@@ -124,6 +127,7 @@ document.querySelector("#report-button").addEventListener("click",()=>setPage("R
 
 if(selectedUser){
  if(selectedUser.role!=='sales'){
+if(canAccessPage(selectedUser,'Vendor Center'))mountVendorCenter(document.querySelector('#vendor-center-content'));
 if(canAccessPage(selectedUser,'Customer Center'))mountCustomerCenter(document.querySelector('#customer-center-content'));
 if(canAccessPage(selectedUser,'Dashboard'))mountDashboardAnalytics();
 else dashboard.replaceChildren();
