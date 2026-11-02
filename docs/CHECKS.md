@@ -1,0 +1,5 @@
+# Create Check — Admin 3
+
+Payments includes a Create Check section. Admin 3 selects an active cash/bank source and the most specific active expense account/subaccount, enters unique check reference, date, positive whole-rupiah amount, payee and optional notes. A saved immutable record links the bank decrease and expense increase by identical amount. Invalid values, duplicate references and other roles fail before writes. No physical stock changes, external bank transactions or production GL postings occur.
+
+Bank movement is derived from customer receipts minus supplier payments minus checks, per bank account. It is explicitly labeled net session movement, not an actual bank balance: no opening balance has been supplied or invented, and no insufficient-funds rule is imposed on unknown real balances. Check records provide expense allocation and history, not a bank transfer. The app still uses session memory and simulated roles; opening balances, production authorization, ledger and reversal UI remain future work. Admin super permissions remain unspecified.
