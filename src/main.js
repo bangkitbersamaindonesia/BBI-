@@ -1,16 +1,14 @@
+import { mountReports } from './reports.js';
 import { mountVendorCenter } from './vendor-center.js';
 import { mountCustomerCenter } from './customer-center.js';
 import { demoStore as workspaceStore, clearDemoSubscriptions } from './demo-store.js';
 import { canAccessPage, defaultWorkspacePage } from './workspace-access.js';
 import { mountSalesTools } from './sales-tools.js';
-import { mountFinancialReports } from './financial-reports.js';
 import { mountChecks } from './checks.js';
 import { mountUsers } from './users.js';
 import { mountPayments } from './payments.js';
 import { mountInvoicePreview } from './invoice-preview.js';
 import { mountAccounts } from "./accounts.js";
-import { mountMarginReport } from "./margin.js";
-import { mountLossSales } from "./loss-sales.js";
 import "./style.css";
 import { mountSales } from "./sales.js";
 import { mountSku } from "./sku.js";
@@ -137,12 +135,7 @@ mountSku(document.querySelector("#sku-content"));
 
 mountSales(document.querySelector("#sales-content"), document.querySelector("#purchasing-content"));
 
-if(canAccessPage(selectedUser,'Reports')){
-mountLossSales(document.querySelector("#reports-content"));
-
-mountMarginReport(document.querySelector("#reports-content"));
-mountFinancialReports(document.querySelector("#reports-content"));
-}
+if(canAccessPage(selectedUser,'Reports'))mountReports(document.querySelector('#reports-content'));
 
 if(canAccessPage(selectedUser,'Accounting'))mountAccounts(document.querySelector("#accounting-content"));
 
