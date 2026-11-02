@@ -11,14 +11,13 @@ export function reportPeriod(preset,today,custom={}){
 export function financialEntries(store){
  const entries=[];const add=(date,source,values)=>{entries.push({date,source,values});};
  for(const o of store.financialOpenings??[])add(o.date,o.id,{inventory:BigInt(o.amount),openingEquity:BigInt(o.amount)});
- for(const b of store.bills){const total=BigInt(b.total),tax=documentTax('supplier',b,total);add(b.date,b.id,{inventory:total,ppn:tax,ap:total+tax});}
- for(const i of store.invoices){const total=BigInt(i.total),tax=documentTax('customer',i,total),cost=BigInt(i.costTotal??0);add(i.date,i.id,{ar:total+tax,ppn:-tax,revenue:total,inventory:-cost,cogs:cost});}
+ for(const b of store.bills){const total=BigInt(b.total),tax=documentTax('supplier',b,total);add(b.date,b.id,{inventory:total,['vat:PPN-IN']:tax,ap:total+tax});}
+ for(const i of store.invoices){const total=BigInt(i.total),tax=documentTax('customer',i,total),cost=BigInt(i.costTotal??0);add(i.date,i.id,{ar:total+tax,['vat:PPN-OUT']:-tax,revenue:total,inventory:-cost,cogs:cost});}
  const credited=new Map();
- for(const c of store.credits){const customer=c.type==='customer',doc=(customer?store.invoices:store.bills).find(d=>d.id===c.sourceId);if(!doc)continue;const total=BigInt(doc.total),key=c.type+':'+c.sourceId,previous=credited.get(key)??0n,value=BigInt(c.total),cost=BigInt(c.costReversal??0);const tax=documentTax(c.type,doc,total-previous)-documentTax(c.type,doc,total-previous-value);credited.set(key,previous+value);add(c.date,c.id,customer?{ar:-(value+tax),ppn:tax,revenue:-value,inventory:cost,cogs:-cost}:{ap:-(value+tax),ppn:-tax,inventory:-cost,otherIncome:value-cost});}
+ for(const c of store.credits){const customer=c.type==='customer',doc=(customer?store.invoices:store.bills).find(d=>d.id===c.sourceId);if(!doc)continue;const total=BigInt(doc.total),key=c.type+':'+c.sourceId,previous=credited.get(key)??0n,value=BigInt(c.total),cost=BigInt(c.costReversal??0);const tax=documentTax(c.type,doc,total-previous)-documentTax(c.type,doc,total-previous-value);credited.set(key,previous+value);add(c.date,c.id,customer?{ar:-(value+tax),['vat:PPN-OUT']:tax,revenue:-value,inventory:cost,cogs:-cost}:{ap:-(value+tax),['vat:PPN-IN']:-tax,inventory:-cost,otherIncome:value-cost});}
  for(const p of store.payments??[]){const amount=BigInt(p.amount);add(p.date,p.id,p.type==='customer'?{['bank:'+p.accountId]:amount,ar:-amount}:{['bank:'+p.accountId]:-amount,ap:-amount});}
  for(const w of store.writeOffs??[]){const amount=BigInt(w.amount);add(w.date,w.id,w.type==='customer'?{ar:-amount,['expense:'+w.accountId]:amount}:{ap:-amount,['income:'+w.accountId]:amount});}
- for(const c of store.checks??[]){const amount=BigInt(c.amount);add(c.date,c.id,{['bank:'+c.bankAccountId]:-amount,...(c.expenseAccountId==='ASSET-PPN'?{ppn:-amount}:{['expense:'+c.expenseAccountId]:amount})});}
- if(store.accounts?.find(a=>a.id==='ASSET-PPN')?.nonPosting){for(const entry of entries){delete entry.values.ppn;}}
+ for(const c of store.checks??[]){const amount=BigInt(c.amount);add(c.date,c.id,{['bank:'+c.bankAccountId]:-amount,...(c.expenseAccountId==='PPN-OUT'?{['vat:PPN-OUT']:amount}:{['expense:'+c.expenseAccountId]:amount})});}
  return entries;
 }
 export function financialReport(store,start,end){
@@ -26,6 +25,7 @@ export function financialReport(store,start,end){
  for(const entry of entries){if(!entry.date||entry.date>end)continue;for(const [key,value]of Object.entries(entry.values)){balances[key]=(balances[key]??0n)+value;if(entry.date>=start)period[key]=(period[key]??0n)+value;}}
  const sum=(obj,prefix)=>Object.entries(obj).filter(([k])=>k.startsWith(prefix)).reduce((s,[,v])=>s+v,0n);
  const profit=obj=>(obj.revenue??0n)+(obj.otherIncome??0n)+sum(obj,'income:')-(obj.cogs??0n)-sum(obj,'expense:');
- const bank=sum(balances,'bank:'),assets=bank+(balances.inventory??0n)+(balances.ar??0n)+(balances.ppn??0n),liabilities=balances.ap??0n,equity=(balances.openingEquity??0n)+profit(balances);
- return {balances,period,revenue:period.revenue??0n,cogs:period.cogs??0n,grossProfit:(period.revenue??0n)-(period.cogs??0n),otherIncome:(period.otherIncome??0n)+sum(period,'income:'),expenses:sum(period,'expense:'),netProfit:profit(period),bank,assets,liabilities,equity,accumulatedProfit:profit(balances),difference:assets-liabilities-equity};
+ balances.ppn=sum(balances,'vat:');const ppnAsset=balances.ppn>0n?balances.ppn:0n,ppnLiability=balances.ppn<0n?-balances.ppn:0n;
+ const bank=sum(balances,'bank:'),assets=bank+(balances.inventory??0n)+(balances.ar??0n)+ppnAsset,liabilities=(balances.ap??0n)+ppnLiability,equity=(balances.openingEquity??0n)+profit(balances);
+ return {balances,period,revenue:period.revenue??0n,cogs:period.cogs??0n,grossProfit:(period.revenue??0n)-(period.cogs??0n),otherIncome:(period.otherIncome??0n)+sum(period,'income:'),expenses:sum(period,'expense:'),netProfit:profit(period),ppnAsset,ppnLiability,bank,assets,liabilities,equity,accumulatedProfit:profit(balances),difference:assets-liabilities-equity};
 }

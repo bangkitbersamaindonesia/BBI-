@@ -40,7 +40,7 @@ These are chart-of-account records separate from SKUs. No balances, opening valu
 
 Admin 1 simulation can add/edit names, types, optional bank details, notes and active status; Sales simulation is read-only. Cash/bank accounts can change type; existing bank details must be explicitly cleared before converting a bank account to petty cash. Inventory accounts remain in their original group. Names must be unique within their account group ignoring capitalization and repeated whitespace; the same label can exist in Inventory Asset and COGS as different accounts. Records retain stable IDs and in-memory edit history. No deletion is provided.
 
-Everything is page-session memory; reload restores the supplied 87 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
+Everything is page-session memory; reload restores the supplied 89 accounts and discards demo edits. This is not a database migration or a complete accounting ledger. Opening balances, COA codes, SKU/category links, production authorization, posting accounts, payment/transfer integration and bank reconciliation remain future work. No real banking connection, credentials, account creation at a bank, payments or financial posting is performed.
 
 ## Expenses
 
@@ -165,7 +165,7 @@ The parent account **Sales** is explicitly classified `income` / **Income**, wit
 
 The parent has ID `INCOME-ROOT`; the children have independent stable IDs. Matching labels in Inventory Assets or COGS remain separate account records. Income supports one subaccount level, active-parent/depth/cycle validation and ancestry-preserving search. Its add form defaults to Sales as parent. Admin 1 simulation can edit metadata and active status, using the existing account master behavior.
 
-No SKU/category revenue mapping, financial journals, recognition/tax policy, initial balances or automatic ledger posting is inferred. Existing customer invoice and margin calculations remain unchanged; this adds only chart-of-account records. Initial session total is now 87 records including eleven Income accounts. The application remains a client-side session demo, not a posted ledger or database migration.
+No SKU/category revenue mapping, financial journals, recognition/tax policy, initial balances or automatic ledger posting is inferred. Existing customer invoice and margin calculations remain unchanged; this adds only chart-of-account records. Initial session total is now 89 records including eleven Income accounts. The application remains a client-side session demo, not a posted ledger or database migration.
 
 ## Uncategorized Income
 
@@ -173,14 +173,22 @@ Uncategorized Income is an active top-level Income account (ID `INCOME-UNCATEGOR
 
 ## Payment settlement accounts
 
-Added Expenses / toko tidak bayar (EXP-BAD-DEBT) for customer residual write-offs, and Income / misc expenses (INCOME-AP-WRITEOFF) for supplier residual write-offs, as requested. These are separate from the existing Expenses / misc expenses. Session seed total is 87 accounts. Payment records link to active cash/bank accounts and write-off records link to these account IDs; no production ledger posting is performed.
+Added Expenses / toko tidak bayar (EXP-BAD-DEBT) for customer residual write-offs, and Income / misc expenses (INCOME-AP-WRITEOFF) for supplier residual write-offs, as requested. These are separate from the existing Expenses / misc expenses. Session seed total is 89 accounts. Payment records link to active cash/bank accounts and write-off records link to these account IDs; no production ledger posting is performed.
 
 ## PPN — Other Current Asset
 
-PPN (ASSET-PPN) belongs to Other Current Assets, separate from Inventory Assets. Its session movement detail adds PPN from finalized supplier bills, subtracts PPN from issued option-A invoices and subtracts Write Checks specifically targeting PPN. Other expense checks do not affect PPN. The seed now contains 87 accounts.
+PPN (ASSET-PPN) belongs to Other Current Assets, separate from Inventory Assets. Its session movement detail adds PPN from finalized supplier bills, subtracts PPN from issued option-A invoices and subtracts Write Checks specifically targeting PPN. Other expense checks do not affect PPN. The seed now contains 89 accounts.
 
 Added tax expense (EXP-TAX) as the 17th top-level Expenses account, after toko tidak bayar. It is available in P&L and expense checks through the existing account-based lists; no automatic tax allocation is inferred. Expenses now has 17 main accounts and 7 subaccounts.
 
 ## Latest revision: PPN is non-posting
 
 ASSET-PPN now has nonPosting=true. New Write Checks to this account are rejected and the account is excluded from destination choices. Source invoice/bill PPN amounts, payable/receivable totals and reference tax history remain; no new posting is allocated to PPN or an inferred replacement account. Financial report entries omit PPN and the Balance Sheet omits the non-posting asset row. The tax reference panel is explicitly not an account balance. As gross AR/AP still contain document tax, reconciliation may show an unallocated-tax difference until a posting account mapping is specified. Prior check records remain in source history rather than being silently deleted. This supersedes earlier direct PPN posting instructions.
+
+## Approved PPN settlement workflow (current)
+
+This supersedes the earlier unmapped/non-posting-only and double-asset-check descriptions. PPN (ASSET-PPN) remains a non-posting parent. PPN Masukan (PPN-IN) and PPN Keluaran (PPN-OUT) are posting children. Bills add positive input VAT; option-A invoices add negative output VAT. Approved returns reverse their associated VAT. The tracker separates input, output before deposits, deposits, net VAT and remaining payable/overpayment.
+
+Admin 3 selects Setoran PPN in Write Check: credit bank, debit PPN Keluaran. The signed net balance rises toward zero; no tax expense is created. Deposits cannot exceed the outstanding deficit as of the check date; parent and input VAT are not valid payment targets. No customer/supplier invoice payments repost VAT. The PPN parent is derived only, never directly posted or double counted.
+
+Balance Sheet shows negative net PPN as PPN Kurang Bayar / Utang PPN under liabilities; positive net PPN is PPN lebih bayar under assets. Settlement reduces both bank and the liability equally, preserves net income and reconciles Assets = Liabilities + Equity. Tax expense remains a separate available expense for actual tax costs and does not participate in this settlement flow. All remain session-derived demo records, not a production GL.
