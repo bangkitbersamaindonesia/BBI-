@@ -15,3 +15,5 @@ demoStore.financialOpenings=demoStore.balances.map((b,i)=>({id:'OPEN-DEMO-'+i,da
 const listeners = new Set();
 export function subscribeDemo(listener) { listeners.add(listener); }
 export function notifyDemo() { listeners.forEach(listener => listener()); }
+
+export function clearDemoSubscriptions(){listeners.clear();}

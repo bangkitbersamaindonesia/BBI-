@@ -1,3 +1,6 @@
+import { demoStore as workspaceStore, clearDemoSubscriptions } from './demo-store.js';
+import { canAccessPage } from './workspace-access.js';
+import { mountSalesTools } from './sales-tools.js';
 import { mountFinancialReports } from './financial-reports.js';
 import { mountChecks } from './checks.js';
 import { mountUsers } from './users.js';
@@ -11,11 +14,15 @@ import { mountSales } from "./sales.js";
 import { mountSku } from "./sku.js";
 import { mountDashboardAnalytics } from "./dashboard-analytics.js";
 
+function renderWorkspace(){
+clearDemoSubscriptions();
+const selectedUser=workspaceStore.users.find(u=>u.id===sessionStorage.getItem('bbi-demo-user')&&u.active);
 const nav = [
   { icon:"▦", label:"Dashboard" },
   { icon:"◫", label:"Inventory" },
   { icon:"◈", label:"Purchasing" },
   { icon:"◉", label:"Sales" },
+  { icon:"▦", label:"Sales Tools" },
   { icon:"↔", label:"Payments" },
   { icon:"▤", label:"Accounting" },
   { icon:"▥", label:"Reports" },
@@ -28,17 +35,17 @@ const orders = [
   {id:"SO-2026-0045",customer:"UD Cahaya Busana",category:"Celana Chino · 300 pcs",value:"Rp 33.000.000",status:"Selesai",tone:"neutral"},
 ];
 const format = new Intl.DateTimeFormat("id-ID",{day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Jakarta"});
-const app = document.querySelector("#app");
+const app = document.querySelector("#app");document.querySelector("#invoice-preview")?.remove();document.body.classList.remove("invoice-preview-open");
 function icon(name){return '<span class="icon" aria-hidden="true">'+name+'</span>';}
-function menuItem(item,index){return '<button class="nav-item '+(index===0?'active':'')+'" type="button" data-page="'+item.label+'">'+icon(item.icon)+'<span>'+item.label+'</span>'+'</button>';}
+function menuItem(item,index){return '<button class="nav-item '+(index===0?'active':'')+'" type="button" data-page="'+item.label+'">'+icon(item.icon)+'<span>'+(item.label==='Sales'?'Sales Order':item.label)+'</span>'+'</button>';}
 app.innerHTML = `
 <div class="shell">
   <aside class="sidebar" id="sidebar">
     <a href="#" class="logo" aria-label="BBI ERP beranda"><span class="logo-mark">B</span><span><strong>BBI ERP</strong><small>Business management</small></span></a>
     <p class="sidebar-label">WORKSPACE</p>
-    <nav aria-label="Navigasi utama">${nav.map(menuItem).join("")}</nav>
+    <nav aria-label="Navigasi utama">${nav.filter(item=>selectedUser&&canAccessPage(selectedUser,item.label)).map(menuItem).join("")}</nav>
     <div class="sidebar-bottom"><div class="help-symbol">?</div><div><strong>Butuh bantuan?</strong><small>Sistem dalam pengembangan</small></div></div>
-    <div class="profile"><span class="avatar">AD</span><div><strong>Administrator</strong><small>BBI Indonesia</small></div><span class="dots">⋯</span></div>
+    <div class="profile"><span class="avatar">AD</span><div><strong>${selectedUser?.name??'Pilih user'}</strong><small>${selectedUser?.role??'Demo akses workspace'}</small></div><button type="button" class="secondary-button" id="workspace-signout">Keluar</button></div>
   </aside>
   <div class="main-area">
     <header class="topbar">
@@ -69,7 +76,7 @@ app.innerHTML = `
       <section id="sales-content" hidden></section>
       <section id="purchasing-content" hidden></section>
       <section id="reports-content" hidden></section>
-      <section id="accounting-content" hidden></section><section id="payments-content" hidden></section><section id="users-content" hidden></section>
+      <section id="accounting-content" hidden></section><section id="payments-content" hidden></section><section id="users-content" hidden></section><section id="sales-tools-content" hidden></section>
       <section id="placeholder" hidden class="panel placeholder"><div class="placeholder-icon">◈</div><h2 id="placeholder-title"></h2><p>Modul ini akan dikembangkan pada tahap berikutnya. Dashboard saat ini hanya menampilkan data contoh.</p><button class="secondary-button" id="back-dashboard" type="button">Kembali ke Dashboard</button></section>
       <footer class="footer"><span>© 2026 BBI ERP · Garment Trading Management</span><span>Prototype v0.1 · Tanpa database</span></footer>
     </main>
@@ -83,6 +90,8 @@ const pageSubtitle = document.querySelector("#page-subtitle");
 const mobileToggle = document.querySelector("#menu-toggle");
 const sidebar = document.querySelector("#sidebar");
 function setPage(page){
+  if(!canAccessPage(selectedUser,page))page=selectedUser?.role==='sales'?'Sales Tools':'Dashboard';
+  const isSalesTools=page==='Sales Tools';document.querySelector("#sales-tools-content").hidden=!isSalesTools;
   const isDashboard=page==="Dashboard";
   const isUsers=page==="Users";
   document.querySelector("#users-content").hidden=!isUsers;
@@ -97,11 +106,11 @@ function setPage(page){
   document.querySelector("#purchasing-content").hidden=!isPurchasing;
   document.querySelector("#sku-content").hidden=!isSku;
   buttons.forEach(button=>{button.classList.toggle("active",button.dataset.page===page);button.setAttribute("aria-current",button.dataset.page===page?"page":"false");});
-  pageTitle.textContent=isSku?"Master SKU":page;
+  pageTitle.textContent=isSku?"Master SKU":page==='Sales'?'Sales Order':page;
   document.querySelector("#breadcrumb-active").textContent=page;
-  pageSubtitle.textContent=isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Sales Order, draft PO otomatis, dan penerbitan invoice customer oleh Admin 2.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Balance Sheet, Profit & Loss, margin dan loss sales.":isUsers?"Daftar sales dan admin BBI.":isPayments?"Pembayaran customer/supplier oleh Admin 2 dan check pengeluaran oleh Admin 3.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, pendapatan, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
+  pageSubtitle.textContent=isSalesTools?"Katalog produk dan harga jual untuk sales.":isDashboard?"Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.":isSku?"Kelola varian garment dan stok awal per gudang.":isSales?"Sales Order, draft PO otomatis, dan penerbitan invoice customer oleh Admin 2.":isPurchasing?"PO, respons supplier, dan tagihan barang yang dipenuhi.":isReports?"Balance Sheet, Profit & Loss, margin dan loss sales.":isUsers?"Daftar sales dan admin BBI.":isPayments?"Pembayaran customer/supplier oleh Admin 2 dan check pengeluaran oleh Admin 3.":isAccounting?"Master akun kas/bank, piutang, utang supplier, aset, HPP, pendapatan, biaya, kewajiban, dan ekuitas.":"Halaman "+page+" sedang disiapkan.";
   dashboard.hidden=!isDashboard;
-  placeholder.hidden=isDashboard || isSku || isSales || isPurchasing || isReports || isAccounting || isPayments || isUsers;
+  placeholder.hidden=isDashboard || isSku || isSales || isPurchasing || isReports || isAccounting || isPayments || isUsers || isSalesTools;
   if(!isDashboard) document.querySelector("#placeholder-title").textContent=page;
   sidebar.classList.remove("open");mobileToggle.setAttribute("aria-expanded","false");
 }
@@ -110,6 +119,8 @@ mobileToggle.addEventListener("click",()=>{const open=sidebar.classList.toggle("
 document.querySelector("#back-dashboard").addEventListener("click",()=>setPage("Dashboard"));
 document.querySelector("#report-button").addEventListener("click",()=>setPage("Reports"));
 
+if(selectedUser){
+ if(selectedUser.role!=='sales'){
 mountDashboardAnalytics();
 
 
@@ -132,3 +143,17 @@ mountUsers(document.querySelector("#users-content"));
 const checksRoot=document.createElement("div");document.querySelector("#payments-content").append(checksRoot);mountChecks(checksRoot);
 
 mountFinancialReports(document.querySelector("#reports-content"));
+
+ }
+ if(selectedUser.role==='sales')mountSales(document.querySelector('#sales-content'),document.querySelector('#purchasing-content'),selectedUser);
+ mountSalesTools(document.querySelector('#sales-tools-content'));
+ document.querySelector('#report-button').hidden=selectedUser.role==='sales';
+ document.querySelector('#workspace-signout').onclick=()=>{sessionStorage.removeItem('bbi-demo-user');renderWorkspace();};
+ setPage(selectedUser.role==='sales'?'Sales Tools':'Dashboard');
+}else{
+ document.querySelector('.shell').hidden=true;
+ const chooser=document.createElement('section');chooser.className='panel workspace-user-chooser';chooser.innerHTML='<h1>BBI Workspace</h1><p>Pilih user untuk simulasi akses. Ini belum merupakan login terautentikasi.</p><label>User demo<select id="workspace-user">'+workspaceStore.users.map(u=>'<option value="'+u.id+'">'+u.name+' · '+u.role+'</option>').join('')+'</select></label><button type="button" class="primary-button">Buka workspace demo</button>';app.append(chooser);chooser.querySelector('button').onclick=()=>{sessionStorage.setItem('bbi-demo-user',chooser.querySelector('select').value);renderWorkspace();};
+}
+
+}
+renderWorkspace();
