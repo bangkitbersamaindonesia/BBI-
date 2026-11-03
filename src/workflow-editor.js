@@ -15,7 +15,7 @@ export function handleEditor(root){
   if(invoice && e.target.matches('.edit-sku, [name="priceLevel"]')){
    for(const row of invoice.querySelectorAll('.editable-item')){
     const product=store.products.find(p=>p.sku===row.querySelector('.edit-sku').value);
-    row.querySelector('.edit-price').value=product?priceForLevel(product.sellingPrice,invoice.elements.priceLevel.value):'';
+    row.querySelector('.edit-price').value=product?priceForLevel(product.purchasePrice,invoice.elements.priceLevel.value):'';
    }
    return;
   }
