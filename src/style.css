@@ -96,3 +96,25 @@ body.invoice-preview-open{overflow:auto}body.invoice-preview-open .shell{display
 .so-grid .line-sku{max-width:210px}
 .so-grid .line-description{min-width:145px;white-space:normal}
 .so-grid .line-price-label{display:block;font-size:11px;white-space:nowrap}
+
+.so-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 20px}
+.so-toolbar button:disabled{opacity:.48;cursor:default}
+.so-find-results{display:grid;gap:8px;max-height:50vh;overflow:auto;margin:14px 0}
+.so-document{padding:16px 0;color:#202c41}
+.so-document header p{margin-bottom:4px}
+.so-document dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 16px}
+.so-document dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.so-document table{width:100%;border-collapse:collapse}
+.so-document td,.so-document th{padding:8px;border-bottom:1px solid #dce5f0;text-align:left}
+.so-document tfoot{font-weight:700}
+.so-document-notes{white-space:pre-wrap}
+.so-print-sheet{display:none}
+@media print{
+  body.so-printing{background:white}
+  body.so-printing > :not(.so-print-sheet){display:none!important}
+  body.so-printing > .so-print-sheet{display:block}
+  .so-print-sheet .table-scroll{overflow:visible}
+  .so-print-sheet table{min-width:0}
+  .so-print-sheet thead{display:table-header-group}
+  .so-print-sheet tr{break-inside:avoid}
+}
