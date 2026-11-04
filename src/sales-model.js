@@ -1,12 +1,31 @@
-import { toPcs, WAREHOUSES } from './sku-model.js';
+import { toPcs, UNITS, WAREHOUSES } from './sku-model.js';
 function requireRole(role, expected) { if (role !== expected) throw new Error(`Langkah ini untuk ${expected === 'sales' ? 'Sales' : 'Admin 1'}.`); }
 const text = value => String(value ?? '').trim();
+export function salesLineAmounts(qty, unit, rawPrice, perUnit = false) {
+  const quantityPcs = toPcs(qty, unit);
+  const unitPrice = Number(rawPrice);
+  if (quantityPcs <= 0 || !/^\d+$/.test(text(rawPrice)) || !Number.isSafeInteger(unitPrice)) {
+    throw Error('Isi qty positif dan harga jual rupiah bulat.');
+  }
+  const divisor = BigInt(perUnit ? UNITS[unit] : 1);
+  const rounded = value => Number((value + divisor / 2n) / divisor);
+  const subtotal = rounded(BigInt(quantityPcs) * BigInt(unitPrice));
+  if (!Number.isSafeInteger(subtotal)) throw Error('Nilai pesanan melebihi batas aman.');
+  return {quantityPcs, price:rounded(BigInt(unitPrice)), subtotal, ...(perUnit ? {unitPrice} : {})};
+}
 export function submitOrder(store, input, role) {
   requireRole(role, 'sales');
+  if (input.customerFromCenter) {
+    const customer = store.customers?.find(c => c.name === input.customer && c.active !== false);
+    if (!customer || (input.salesOwner && customer.salesperson !== input.salesOwner)) throw Error('Pilih customer aktif yang sesuai dengan Sales.');
+    input = {...input, salesperson:customer.salesperson, address:customer.shippingAddress ?? customer.address,
+      expeditionAddress:customer.expeditionAddress};
+  }
   const letterhead = input.letterhead ?? 'B';
   if (!['A','B'].includes(letterhead)) throw Error('Pilih opsi invoice A atau B.');
   if (!text(input.customer) || !text(input.salesperson) || !text(input.address)) throw new Error('Pelanggan, nama sales, dan alamat kirim wajib diisi.');
-  if ([input.customer,input.salesperson,input.address,input.notes].some(v=>text(v).length>500)) throw new Error('Isian maksimal 500 karakter.');
+  if ([input.customer,input.salesperson,input.notes].some(v=>text(v).length>500)) throw new Error('Isian maksimal 500 karakter.');
+  if ([input.address,input.expeditionAddress].some(v=>text(v).length>1000)) throw Error('Alamat maksimal 1.000 karakter.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.deliveryDate ?? '') || !Number.isFinite(Date.parse(input.deliveryDate)) || new Date(input.deliveryDate).toISOString().slice(0,10)!==input.deliveryDate) throw new Error('Tanggal kebutuhan wajib diisi.');
   if (!input.lines?.length) throw new Error('Tambahkan minimal satu item.');
   const seen = new Set();
@@ -15,15 +34,12 @@ export function submitOrder(store, input, role) {
     const product = store.products.find(p=>p.sku===line.sku);
     if (!product || seen.has(line.sku)) throw new Error('Pilih SKU valid dan gabungkan SKU yang sama dalam satu baris.');
     seen.add(line.sku);
-    const quantityPcs = toPcs(line.qty,line.unit);
-    if (quantityPcs <= 0) throw new Error('Qty pesanan harus lebih dari 0 pcs.');
-    const price = String(line.price ?? '').trim();
-    if (!/^\d+$/.test(price) || !Number.isSafeInteger(Number(price))) throw new Error('Harga jual harus rupiah bulat dan tidak negatif.');
-    const subtotal = quantityPcs * Number(price); total += subtotal;
-    if (!Number.isSafeInteger(subtotal) || !Number.isSafeInteger(total)) throw new Error('Nilai pesanan melebihi batas aman.');
-    return {sku:product.sku,name:product.name,size:product.size,color:product.color,qty:String(line.qty),unit:line.unit,quantityPcs,price:Number(price),subtotal};
+    const amounts = salesLineAmounts(line.qty,line.unit,line.price,input.pricePerUnit);
+    total += amounts.subtotal;
+    if (!Number.isSafeInteger(total)) throw Error('Nilai pesanan melebihi batas aman.');
+    return {sku:product.sku,name:product.name,size:product.size,color:product.color,qty:String(line.qty),unit:line.unit,...amounts};
   });
-  const order = {id:`SO-DEMO-${String(store.orders.length+1).padStart(4,'0')}`,customer:text(input.customer),salesperson:text(input.salesperson),address:text(input.address),deliveryDate:input.deliveryDate,letterhead,notes:text(input.notes),lines,total,status:'Menunggu Admin 1',history:[{action:'Diajukan sales',at:new Date().toISOString()}]};
+  const order = {id:`SO-DEMO-${String(store.orders.length+1).padStart(4,'0')}`,customer:text(input.customer),salesperson:text(input.salesperson),address:text(input.address),expeditionAddress:text(input.expeditionAddress),deliveryDate:input.deliveryDate,letterhead,notes:text(input.notes),lines,total,status:'Menunggu Admin 1',history:[{action:'Diajukan sales',at:new Date().toISOString()}]};
   store.orders.push(order); return order;
 }
 export function availablePcs(store, sku, warehouseId) {

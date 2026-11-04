@@ -10,7 +10,7 @@ export function customerDirectory(store){
 export function saveCustomer(store,input,originalName=null){
  const name=String(input.name??'').trim();if(!name||name.length>200)throw Error('Nama toko / customer wajib diisi (maksimal 200 karakter).');
  if(originalName&&name!==originalName)throw Error('Nama customer yang tersimpan tidak dapat diubah agar tautan transaksi tetap konsisten.');
- const fields=['contact','mobile','salesperson','email','terms','billingAddress','shippingAddress','geography','notes'];const row={name,active:input.active!==false};
+ const fields=['contact','mobile','salesperson','email','terms','billingAddress','shippingAddress','expeditionAddress','geography','notes'];const row={name,active:input.active!==false};
  for(const field of fields){row[field]=String(input[field] ?? (field === 'shippingAddress' ? input.address : '') ?? '').trim();if(row[field].length>1000)throw Error('Isian maksimal 1.000 karakter.');}
  if(row.salesperson && !['Doni','Lutfi','Dipa'].includes(row.salesperson))throw Error('Pilih Sales Doni, Lutfi, atau Dipa.');
  if(row.geography && !['Jawa','Luar Pulau'].includes(row.geography))throw Error('Pilih Geografi Jawa atau Luar Pulau.');

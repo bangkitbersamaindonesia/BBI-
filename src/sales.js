@@ -9,7 +9,7 @@ import { supplierPanel, readSupplierResponse, previewSupplierResponse } from './
 import { recordSupplierResponse } from './supplier-model.js';
 import { demoStore as store, subscribeDemo, notifyDemo } from './demo-store.js';
 import { UNITS, WAREHOUSES, toPcs } from './sku-model.js';
-import { submitOrder, reviewOrder, createPurchaseOrder, readyPurchaseOrder } from './sales-model.js';
+import { salesLineAmounts, reviewOrder, createPurchaseOrder, readyPurchaseOrder } from './sales-model.js';
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=value=>new Intl.NumberFormat('id-ID').format(value);
 const money=value=>'Rp '+num(value);
@@ -22,22 +22,39 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
   let role='sales'; let lineId=0;
   const banner=`<div class="demo-banner"><strong>SO → Draft PO otomatis → Otorisasi → Bills / penerimaan → Invoice</strong><span>Data sesi ini hilang saat reload. Peran simulasi, tanpa login. PO dan respons supplier dicatat manual; tidak ada pengiriman otomatis.</span></div>`;
   const roleControl=prefix=>`<div class="workflow-role"><label for="${prefix}-role">Peran simulasi</label><select id="${prefix}-role" class="role-select"><option value="sales">Sales</option><option value="admin1">Admin 1</option><option value="admin2">Admin 2</option></select><span>1. SO → 2. Stok / PO → 3. Tagihan / penerimaan → 4. Pengiriman / invoice</span></div>`;
-  salesRoot.innerHTML=`${banner}${roleControl('sales')}<section class="panel" id="so-entry"><h2>Sales Order pelanggan</h2><p class="sku-guidance">Diisi oleh sales. Harga per pcs; 1 lusin = 12, kodi = 20, gros = 144 pcs.</p><form id="so-form"><div class="sku-form-grid">
-    <label for="so-customer">Nama toko / pelanggan<input id="so-customer" name="customer" required maxlength="500" placeholder="PT / CV / nama toko" /></label>
-    <label for="so-salesperson">Nama sales<select id="so-salesperson" name="salesperson" required><option value="">Pilih sales</option>${store.users.filter(u=>u.role==='sales'&&u.active).map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('')}</select></label>
+  salesRoot.innerHTML=`${banner}${roleControl('sales')}<section class="panel" id="so-entry"><h2>Sales Order pelanggan</h2><p class="sku-guidance">Diisi oleh sales. Harga mengikuti satuan yang dipilih; 1 lusin = 12, kodi = 20, gros = 144 pcs.</p><form id="so-form"><div class="sku-form-grid">
+    <label for="so-customer">Nama toko / customer<select id="so-customer" name="customer" required></select></label>
+    <label for="so-salesperson">Nama sales<input id="so-salesperson" name="salesperson" readonly /></label>
     <label>Opsi invoice<select name="letterhead" required><option value="">Pilih opsi</option><option value="A">A · PT Bangkit Bersama Indonesia</option><option value="B">B · BBI</option></select></label>
     <label for="so-date">Tanggal kebutuhan<input id="so-date" name="deliveryDate" type="date" required /></label>
-    <label class="sku-notes" for="so-address">Alamat kirim<textarea id="so-address" name="address" required maxlength="500" rows="2"></textarea></label>
+    <label class="sku-notes" for="so-address">Alamat kirim<textarea id="so-address" name="address" readonly rows="2"></textarea></label>
+    <label class="sku-notes">Alamat ekspedisi<textarea name="expeditionAddress" readonly rows="2"></textarea></label>
     <label class="sku-notes" for="so-notes">Catatan pelanggan (opsional)<textarea id="so-notes" name="notes" maxlength="500" rows="2"></textarea></label>
     </div><div id="so-lines"></div><div class="sku-actions"><button class="secondary-button" id="add-so-line" type="button">+ Tambah item</button></div><p id="so-total" class="workflow-total" aria-live="polite"></p><p class="sku-guidance">Total barang sebelum pajak, diskon, dan ongkos kirim. Pengajuan SO belum mengurangi stok fisik.</p><button class="primary-button" type="submit">Ajukan SO & buat draft PO otomatis</button></form></section><p class="workflow-message" id="sales-message" role="status" aria-live="polite"></p><section id="so-orders" aria-label="Daftar Sales Order"></section>`;
   purchasingRoot.innerHTML=`${banner}${roleControl('purchase')}<section class="panel" id="stock-po-entry" hidden><h2>PO langsung · Pengisian stok gudang</h2><p class="sku-guidance">Admin 1 membuat PO tanpa Sales Order. Simpan draft, lalu otorisasi sebelum dikirim. Bills final barang datang langsung menambah stok bebas; kekurangan dicatat sebagai loss sales pengisian stok.</p><form id="stock-po-form"><div class="sku-form-grid"><label>Vendor / supplier<input name="supplier" maxlength="200" required></label><label>Gudang tujuan<select name="warehouseId">${warehouses()}</select></label><label>Diskon PO (%)<input name="discountPercent" type="number" min="0" max="100" step="0.01" value="0" required></label><label>Term of payment<input name="paymentTerms" maxlength="500" required></label></div><div class="editable-items">${editorRow({},'po')}</div><button class="secondary-button" type="button" data-add-edit="po">+ Tambah SKU pengisian stok</button> <button class="primary-button" type="submit">Buat draft PO pengisian stok</button></form></section><p class="workflow-message" id="purchase-message" role="status" aria-live="polite"></p><div id="po-orders"></div>`;
   const form=salesRoot.querySelector('#so-form');
   const linesRoot=salesRoot.querySelector('#so-lines');
+  const customers = () => (store.customers ?? []).filter(c => c.active !== false && (!lockedSales || c.salesperson === currentUser.name));
+  function fillCustomer() {
+    const customer = customers().find(c => c.name === form.elements.customer.value);
+    form.elements.salesperson.value = customer?.salesperson ?? '';
+    form.elements.address.value = customer?.shippingAddress ?? customer?.address ?? '';
+    form.elements.expeditionAddress.value = customer?.expeditionAddress ?? '';
+  }
+  function refreshCustomers() {
+    const selected = form.elements.customer.value;
+    const available = customers();
+    form.elements.customer.replaceChildren(new Option(available.length ? 'Pilih customer' : 'Belum ada customer aktif untuk Sales ini', ''));
+    for (const customer of available) form.elements.customer.add(new Option(customer.name, customer.name));
+    form.elements.customer.value = available.some(c => c.name === selected) ? selected : '';
+    fillCustomer();
+  }
+  form.elements.customer.addEventListener('change', fillCustomer);
   function productOptions(selected='') {return '<option value="">Pilih SKU</option>'+store.products.map(p=>`<option value="${esc(p.sku)}" ${p.sku===selected?'selected':''}>${esc(p.sku+' · '+p.name+' · '+p.size+' · '+p.color)}</option>`).join('');}
   function addLine() {
     const id=++lineId;
     const line=document.createElement('fieldset'); line.className='so-line';
-    line.innerHTML=`<legend>Item pesanan</legend><div class="sku-form-grid"><label for="so-item-${id}">SKU<select class="line-sku" id="so-item-${id}" required>${productOptions()}</select></label><label for="so-qty-${id}">Qty<input class="line-qty" id="so-qty-${id}" type="number" min="0" step="any" value="1" required /></label><label for="so-unit-${id}">Satuan<select class="line-unit" id="so-unit-${id}">${units()}</select></label><label for="so-price-${id}">Harga jual (Rp / pcs)<input class="line-price" id="so-price-${id}" type="number" min="0" step="1" required /></label></div><p class="line-summary selected-range"></p><button class="secondary-button remove-so-line" type="button">Hapus item</button>`;
+    line.innerHTML=`<legend>Item pesanan</legend><div class="sku-form-grid"><label for="so-item-${id}">SKU<select class="line-sku" id="so-item-${id}" required>${productOptions()}</select></label><label for="so-qty-${id}">Qty<input class="line-qty" id="so-qty-${id}" type="number" min="0" step="any" value="1" required /></label><label for="so-unit-${id}">Satuan<select class="line-unit" id="so-unit-${id}">${units()}</select></label><label for="so-price-${id}"><span class="line-price-label">Harga jual (Rp / pcs)</span><input class="line-price" id="so-price-${id}" type="number" min="0" step="1" required /></label></div><p class="line-summary selected-range"></p><button class="secondary-button remove-so-line" type="button">Hapus item</button>`;
     linesRoot.append(line); preview();
   }
   function readLines() {return [...linesRoot.querySelectorAll('.so-line')].map(line=>({sku:line.querySelector('.line-sku').value,qty:line.querySelector('.line-qty').value,unit:line.querySelector('.line-unit').value,price:line.querySelector('.line-price').value}));}
@@ -45,18 +62,18 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
     let total=0; let valid=linesRoot.children.length>0;
     [...linesRoot.children].forEach(line=>{
       try {
-        const qty=toPcs(line.querySelector('.line-qty').value,line.querySelector('.line-unit').value);
-        const raw=line.querySelector('.line-price').value; const price=Number(raw); const subtotal=qty*price;
-        if (!raw || !Number.isSafeInteger(price) || price<0 || qty<=0 || !Number.isSafeInteger(subtotal)) throw Error();
+        const unit=line.querySelector('.line-unit').value;
+        const qty=line.querySelector('.line-qty').value;
+        const {unitPrice,subtotal}=salesLineAmounts(qty,unit,line.querySelector('.line-price').value,true);
         total+=subtotal; if(!Number.isSafeInteger(total)) throw Error();
-        line.querySelector('.line-summary').textContent=`${num(qty)} pcs × ${money(price)} = ${money(subtotal)}`;
+        line.querySelector('.line-summary').textContent=`${num(Number(qty))} ${unit} × ${money(unitPrice)} = ${money(subtotal)}`;
       } catch {valid=false;line.querySelector('.line-summary').textContent='Isi qty positif dengan hasil pcs bulat dan harga rupiah bulat.';}
     });
     salesRoot.querySelector('#so-total').textContent=valid?`Total barang: ${money(total)}`:'Total barang: lengkapi item pesanan.';
   }
   function setMessage(root,text) {root.querySelector('.workflow-message').textContent=text;}
   function renderOrders() {
-    salesRoot.querySelector('#so-orders').innerHTML=store.orders.filter(o=>!lockedSales||o.salesperson===currentUser.name).length?store.orders.filter(o=>!lockedSales||o.salesperson===currentUser.name).map(o=>`<article class="panel table-panel"><div class="panel-head"><div><h2>${esc(o.id)} · ${esc(o.customer)}</h2><p>Sales: ${esc(o.salesperson)} · Kebutuhan: ${esc(o.deliveryDate)}</p></div><span class="status blue">${esc(o.status)}</span></div><p class="sku-guidance">Alamat: ${esc(o.address)}<br>Catatan: ${esc(o.notes || '—')}</p><div class="table-scroll"><table><thead><tr><th>SKU / BARANG</th><th>QTY PESAN</th><th>PCS</th><th>HARGA / PCS</th><th>SUBTOTAL</th></tr></thead><tbody>${o.lines.map(l=>`<tr><td>${esc(l.sku)}<br>${esc(l.name+' · '+l.size+' · '+l.color)}</td><td>${esc(l.qty+' '+l.unit)}</td><td>${num(l.quantityPcs)}</td><td>${money(l.price)}</td><td>${money(l.subtotal)}</td></tr>`).join('')}</tbody></table></div><p class="workflow-total">Total barang: ${money(o.total)}</p>
+    salesRoot.querySelector('#so-orders').innerHTML=store.orders.filter(o=>!lockedSales||o.salesperson===currentUser.name).length?store.orders.filter(o=>!lockedSales||o.salesperson===currentUser.name).map(o=>`<article class="panel table-panel"><div class="panel-head"><div><h2>${esc(o.id)} · ${esc(o.customer)}</h2><p>Sales: ${esc(o.salesperson)} · Kebutuhan: ${esc(o.deliveryDate)}</p></div><span class="status blue">${esc(o.status)}</span></div><p class="sku-guidance">Alamat kirim: ${esc(o.address)}<br>Alamat ekspedisi: ${esc(o.expeditionAddress || '—')}<br>Catatan: ${esc(o.notes || '—')}</p><div class="table-scroll"><table><thead><tr><th>SKU / BARANG</th><th>QTY PESAN</th><th>PCS</th><th>HARGA / SATUAN</th><th>SUBTOTAL</th></tr></thead><tbody>${o.lines.map(l=>`<tr><td>${esc(l.sku)}<br>${esc(l.name+' · '+l.size+' · '+l.color)}</td><td>${esc(l.qty+' '+l.unit)}</td><td>${num(l.quantityPcs)}</td><td>${money(l.unitPrice ?? l.price)} / ${esc(l.unitPrice === undefined ? 'pcs' : l.unit)}</td><td>${money(l.subtotal)}</td></tr>`).join('')}</tbody></table></div><p class="workflow-total">Total barang: ${money(o.total)}</p>
     ${o.review&&!lockedSales?`<h2>Ketersediaan & alokasi stok</h2><p class="sku-guidance">Snapshot pemeriksaan stok otomatis / Admin 1. Alokasi otomatis berurutan Lebak → Kediri → Besar. Pemeriksaan tidak mengurangi stok fisik; alokasi demo mengurangi ketersediaan untuk SO berikutnya.</p><div class="table-scroll"><table><thead><tr><th>SKU</th>${WAREHOUSES.map(w=>`<th>${w.name.toUpperCase()}<br>TERSEDIA / ALOKASI PCS</th>`).join('')}<th>KEKURANGAN PCS</th></tr></thead><tbody>${o.review.map(l=>`<tr><td>${esc(l.sku)}</td>${l.warehouses.map(w=>`<td>${num(w.available)} / ${num(w.allocated)}</td>`).join('')}<td>${num(l.shortage)}</td></tr>`).join('')}</tbody></table></div>`:''}
     ${role==='admin1' && o.status==='Menunggu Admin 1'?`<button class="primary-button" type="button" data-review="${esc(o.id)}">Cek stok semua gudang & alokasikan</button>`:''}
     ${role==='admin1' && o.status==='Perlu PO'?`<form class="po-create" data-order="${esc(o.id)}"><h2>Buat PO untuk kekurangan</h2><div class="sku-form-grid"><label for="supplier-${o.id}">Vendor / supplier<input id="supplier-${o.id}" name="supplier" required maxlength="200" placeholder="Nama supplier tujuan" /></label><label for="warehouse-${o.id}">Gudang tujuan<select id="warehouse-${o.id}" name="warehouseId">${warehouses()}</select></label></div><p class="sku-guidance">Hanya qty yang kurang. Harga beli awal memakai master SKU per pcs; periksa kesepakatan supplier sebelum pengiriman.</p><button class="primary-button" type="submit">Buat draft PO</button></form>`:''}${lockedSales?'':fulfillmentPanel(o,role)}${history(o.history)}</article>`).join(''):'<section class="panel table-panel"><h2>Belum ada Sales Order</h2><p class="sku-guidance">Sales dapat mengajukan pesanan pertama melalui form di atas.</p></section>';
@@ -76,12 +93,18 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
   linesRoot.addEventListener('click',e=>{if(e.target.closest('.remove-so-line')){e.target.closest('.so-line').remove();preview();}});
   linesRoot.addEventListener('input',preview);
   linesRoot.addEventListener('change',e=>{
-    if(e.target.matches('.line-sku')){const p=store.products.find(p=>p.sku===e.target.value);e.target.closest('.so-line').querySelector('.line-price').value=p?.sellingPrice ?? '';}
+    if(e.target.matches('.line-sku, .line-unit')){
+      const line=e.target.closest('.so-line');
+      const unit=line.querySelector('.line-unit').value;
+      const product=store.products.find(p=>p.sku===line.querySelector('.line-sku').value);
+      line.querySelector('.line-price-label').textContent=`Harga jual (Rp / ${unit})`;
+      line.querySelector('.line-price').value=product ? product.sellingPrice * UNITS[unit] : '';
+    }
     preview();
   });
   form.addEventListener('submit',e=>{
     e.preventDefault();
-    try {const {order:o,po}=submitSalesWorkflow(store,{...Object.fromEntries(new FormData(form)),...(lockedSales?{salesperson:currentUser.name}:{}),lines:readLines()},role); form.reset();linesRoot.replaceChildren();addLine();notifyDemo();setMessage(salesRoot,`${o.id} diajukan; stok seluruh gudang dialokasikan. ${po?po.id+' otomatis dibuat. Admin 1 memilih supplier dan mengotorisasi di Purchasing.':'Stok mencukupi, tanpa PO.'}`);}
+    try {const {order:o,po}=submitSalesWorkflow(store,{...Object.fromEntries(new FormData(form)),customerFromCenter:true,salesOwner:lockedSales?currentUser.name:null,pricePerUnit:true,lines:readLines()},role); form.reset();fillCustomer();linesRoot.replaceChildren();addLine();notifyDemo();setMessage(salesRoot,`${o.id} diajukan; stok seluruh gudang dialokasikan. ${po?po.id+' otomatis dibuat. Admin 1 memilih supplier dan mengotorisasi di Purchasing.':'Stok mencukupi, tanpa PO.'}`);}
     catch(error){setMessage(salesRoot,error.message);}
   });
   salesRoot.querySelector('#so-orders').addEventListener('click',e=>{
@@ -110,6 +133,7 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
     }catch(error){setMessage(purchasingRoot,error.message);}
   });
   subscribeDemo(()=>{
+    refreshCustomers();
     linesRoot.querySelectorAll('.line-sku').forEach(select=>{const value=select.value;select.innerHTML=productOptions(value);});
     renderOrders();renderPurchasing();
   });
@@ -117,6 +141,6 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
   handleEditor(salesRoot);handleEditor(purchasingRoot);
   mountReturnHandlers(salesRoot,()=>role);
   mountReturnHandlers(purchasingRoot,()=>role);
-  if(lockedSales){salesRoot.querySelector('.workflow-role').hidden=true;salesRoot.querySelector('.role-select').disabled=true;salesRoot.querySelector('.role-select').innerHTML='<option value="sales">Sales</option>';purchasingRoot.querySelector('.workflow-role').hidden=true;form.elements.salesperson.value=currentUser.name;form.elements.salesperson.disabled=true;form.addEventListener('reset',()=>queueMicrotask(()=>{form.elements.salesperson.value=currentUser.name;}));}
-  addLine();syncRole();
+  if(lockedSales){salesRoot.querySelector('.workflow-role').hidden=true;salesRoot.querySelector('.role-select').disabled=true;salesRoot.querySelector('.role-select').innerHTML='<option value="sales">Sales</option>';purchasingRoot.querySelector('.workflow-role').hidden=true;}
+  refreshCustomers();addLine();syncRole();
 }
