@@ -2,7 +2,7 @@ export const SALES_PAGES=['Sales','Sales Tools','Sales Report'];
 export const ADMIN_RESTRICTED_PAGES=['Dashboard','Accounting','Users','Reports','Sales Report'];
 export function canAccessPage(user,page){
  if(!user?.active)return false;
- if(user.role==='sales')return SALES_PAGES.includes(page);
+ if(user.role==='sales')return page==='Workflow BBI'||SALES_PAGES.includes(page);
  if(['admin1','admin2','admin3'].includes(user.role))return !ADMIN_RESTRICTED_PAGES.includes(page);
  return user.role==='superadmin';
 }

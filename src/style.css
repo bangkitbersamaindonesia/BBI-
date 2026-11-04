@@ -69,3 +69,20 @@ body.invoice-preview-open{overflow:auto}body.invoice-preview-open .shell{display
 .average-pay-table tfoot{font-weight:700;background:#edf3ff}
 .sales-report-filters{display:flex;gap:18px;flex-wrap:wrap}.sales-report-filters label{display:grid;gap:7px;font-size:12px}.sales-report-filters input,.sales-report-filters select{padding:9px;border:1px solid #dbe2ec;border-radius:7px}.sales-month-chart{display:flex;gap:18px;overflow-x:auto;padding:24px 8px;border-bottom:1px solid #dce4ed}.sales-month-column{min-width:56px;flex:1;text-align:center;font-size:11px}.sales-month-column>span{display:block;height:24px}.sales-bar-track{height:220px;display:flex;align-items:flex-end;justify-content:center}.sales-month-bar{width:75%;background:#16bf48;min-height:1px;box-shadow:5px -3px #0c8432}.sales-month-bar.negative{background:#cf554a;box-shadow:5px -3px #a63c34}.sales-month-column small{display:block;margin-top:12px}.sales-summary-grid{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;align-items:center}.sales-summary-pie{width:190px;height:190px;border-radius:50%}@media(max-width:700px){.sales-summary-grid{grid-template-columns:1fr}}
 .valuation-table{width:100%;min-width:1050px;border-collapse:collapse}.valuation-table th,.valuation-table td{padding:12px 10px;border-bottom:1px solid #e7ebf3;text-align:right;font-size:12px;font-variant-numeric:tabular-nums}.valuation-table th:first-child{text-align:left;min-width:200px}.valuation-table thead,.valuation-table tfoot{background:#edf3ff;font-weight:700}.valuation-table th small{font-weight:400;color:#75849b}
+
+.workflow-board{display:grid;grid-template-columns:minmax(0,2fr) minmax(250px,1fr);gap:18px;align-items:start}
+.workflow-lane{min-width:0;padding:18px;--workflow-accent:#2e63cf;--workflow-tint:#edf3ff}
+.workflow-lane-green{--workflow-accent:#23714e;--workflow-tint:#eaf7ef}
+.workflow-lane-gold{--workflow-accent:#8e651a;--workflow-tint:#fff5dc}
+.workflow-lane h2{color:var(--workflow-accent);margin:0 0 14px;font-size:14px}
+.workflow-path{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:4px}
+.workflow-path .workflow-tile{flex:1 0 105px}
+.workflow-arrow{color:#73849e;font-size:22px}
+.workflow-tile{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:12px;border:1px solid #e0e7f2;border-radius:10px;background:#fff;color:#243650;min-width:0}
+.workflow-tile:hover{background:var(--workflow-tint);border-color:var(--workflow-accent)}
+.workflow-tile-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--workflow-tint);color:var(--workflow-accent);font-size:21px}
+.workflow-tile small,.workflow-branch{color:#52637c;font-size:12px;line-height:1.45}
+.workflow-branch{margin:12px 4px}
+.workflow-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.workflow-lane:has(.workflow-path){grid-column:1/-1}
+@media(max-width:750px){.workflow-board{grid-template-columns:minmax(0,1fr)}}
