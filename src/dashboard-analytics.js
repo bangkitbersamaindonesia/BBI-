@@ -13,14 +13,24 @@ export function dashboardSummary(store,today) {
   const month = today.slice(0,7);
   const current = rows => rows.filter(row => row.date?.startsWith(month) && row.date <= today);
   const invoices = current(store.invoices);
+  const [year,monthNumber] = month.split('-').map(Number);
+  const previousMonth = new Date(Date.UTC(year,monthNumber-2,1)).toISOString().slice(0,7);
+  const previousSales = sum(store.invoices.filter(row=>row.date?.startsWith(previousMonth)),row=>row.total);
   const sales = sum(invoices,row=>row.total);
   const returns = current(store.credits).filter(row=>row.type==='customer');
   const grossProfit = sales - sum(invoices,row=>row.costTotal ?? 0)
     - sum(returns,row=>row.total) + sum(returns,row=>row.costReversal ?? 0);
   const snapshot = {...store};
   for(const key of ['credits','payments','writeOffs']) snapshot[key] = store[key].filter(row=>row.date<=today);
+  const dueBills = store.bills.filter(bill=>bill.date<=today && bill.dueDate?.startsWith(month))
+    .map(bill=>documentBalance(snapshot,'supplier',bill.id));
+  const dueTotal = sum(dueBills,bill=>bill.due);
+  const dueUnpaid = sum(dueBills,bill=>bill.remaining);
+  const overdueInvoices = invoices => invoices.filter(row=>row.date<=today && row.dueDate?.startsWith(month) && row.dueDate<=today);
   return {
-    sales,
+    sales, previousSales, dueTotal, dueUnpaid,
+    receivables:sum(overdueInvoices(store.invoices),invoice=>documentBalance(snapshot,'customer',invoice.id).remaining),
+    missingDueDates:[...store.invoices,...store.bills].filter(row=>row.date<=today && !row.dueDate).length,
     unpaid:sum(current(store.bills),bill=>documentBalance(snapshot,'supplier',bill.id).remaining),
     inventory:roundRatio(inventoryValuation(store).assetMicros,COST_SCALE),
     grossProfit,
@@ -55,6 +65,14 @@ function salesChart(store,today) {
   </section>`;
 }
 
+function progressChart(label, numerator, denominator) {
+  if (denominator === 0n) return `<p class="dashboard-indicator">${label} · —</p>`;
+  const ratio = Number(roundRatio(numerator * 10000n, denominator)) / 100;
+  const percent = ratio.toLocaleString('id-ID', {maximumFractionDigits:2, signDisplay:ratio<0?'always':'auto'});
+  return `<div class="dashboard-indicator"><span>${label} · <b>${percent}%</b></span>
+    <div class="dashboard-meter ${ratio<0?'down':''}" aria-hidden="true"><span style="width:${Math.min(Math.abs(ratio),100)}%"></span></div></div>`;
+}
+
 export function mountDashboardAnalytics(root) {
   function render(){
     try {
@@ -63,6 +81,7 @@ export function mountDashboardAnalytics(root) {
       const stats = [
         ['Total Penjualan Bulan Ini',summary.sales,'Invoice yang sudah diterbitkan, sebelum PPN','blue','↗'],
         ['Total Tagihan Bulan Ini',summary.unpaid,'Sisa bills bulan ini, termasuk PPN','purple','▣'],
+        ['Total Piutang Bulan Ini',summary.receivables,'Sisa invoice yang sudah jatuh tempo bulan ini','blue','↙'],
         ['Nilai Persediaan',summary.inventory,'Nilai stok seluruh gudang saat ini','amber','◫'],
         ['Estimasi Laba Kotor Bulan Ini',summary.missingCosts ? null : summary.grossProfit,'Penjualan neto dikurangi HPP, setelah retur','green','◎'],
       ];
@@ -75,7 +94,10 @@ export function mountDashboardAnalytics(root) {
       ].filter(row=>row.at).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,6);
       root.innerHTML = `<section class="stats" aria-label="Ringkasan indikator bisnis">
         ${stats.map(([label,value,note,tone,icon])=>`<article class="stat"><div class="stat-top"><span>${label}</span><span class="stat-icon ${tone}">${icon}</span></div>
-        <strong>${value===null?'—':money(value)}</strong><div class="stat-foot">${value===null?'HPP invoice belum lengkap':note}</div></article>`).join('')}</section>
+        <strong>${value===null?'—':money(value)}</strong><div class="stat-foot">${value===null?'HPP invoice belum lengkap':note}</div>
+        ${tone==='blue' && icon==='↗' ? progressChart('Perubahan vs. bulan lalu',summary.sales-summary.previousSales,summary.previousSales) : ''}
+        ${tone==='purple' ? progressChart('Belum dibayar · bills jatuh tempo bulan ini',summary.dueUnpaid,summary.dueTotal) : ''}</article>`).join('')}</section>
+        ${summary.missingDueDates ? `<p class="sku-guidance">${summary.missingDueDates} dokumen belum memiliki jatuh tempo dan dikecualikan dari indikator jatuh tempo.</p>` : ''}
         ${salesChart(demoStore,today)}
         <section class="panel table-panel dashboard-section"><h2>Sales Order Terbaru</h2>
         <div class="table-scroll"><table><thead><tr><th>NO. ORDER</th><th>CUSTOMER</th><th>PRODUK</th><th>TOTAL</th><th>STATUS</th></tr></thead>

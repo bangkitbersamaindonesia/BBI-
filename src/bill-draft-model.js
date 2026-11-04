@@ -1,3 +1,4 @@
+import {paymentDueDate} from './payment-due-date.js';
 import { receiveSupplierGoods } from './fulfillment-model.js';
 import { recordSupplierResponse } from './supplier-model.js';
 // Bill edits are validated on a copy so extra SKU validation cannot partially write a bill.
@@ -35,6 +36,11 @@ export function finalizeBillDraft(store,poId,input,role){
  if(po.purpose==='stock_replenishment')for(const loss of result.losses)loss.origin='stock_replenishment';
  draft.history.push({action:'Draft bills otomatis dari PO dicocokkan dan difinalisasi Admin 1',billLines:structuredClone(rows),at:new Date().toISOString()});
  const taxRaw=String(input.ppnAmount??'0').trim();if(!/^\d+$/.test(taxRaw))throw Error('PPN bills harus rupiah bulat tidak negatif.');if(!bill&&BigInt(taxRaw)>0n)throw Error('PPN tidak dapat dicatat tanpa bills barang.');if(bill){bill.ppnAmount=BigInt(taxRaw).toString();bill.amountDue=(BigInt(bill.total)+BigInt(taxRaw)).toString();}
+ if(bill){
+  const vendor=copy.vendors?.find(v=>v.name.trim().toLowerCase()===po.supplier.trim().toLowerCase());
+  const dueDate=paymentDueDate(bill.date,po.paymentTerms) ?? paymentDueDate(bill.date,vendor?.terms);
+  if(dueDate)bill.dueDate=dueDate;
+ }
  if(bill)receiveSupplierGoods(copy,poId,'admin1');
  Object.assign(store,copy);return {...result,bill};
 }

@@ -1,3 +1,4 @@
+import {paymentDueDate} from './payment-due-date.js';
 import {priceForLevel} from './price-level.js';
 import { dispatchCustomerOrder } from './fulfillment-model.js';
 import { previewInvoiceAmounts } from './invoice-preview-model.js';
@@ -15,7 +16,11 @@ export function issueCustomerInvoice(store,orderId,input,role){
  const result=dispatchCustomerOrder(copy,orderId,{date:input.date,final:input.final===true,customerApproved:input.customerApproved===true,lines,additionalLines},'admin1');
  if(!result.invoice)throw Error('Tidak ada barang untuk invoice.');
  order.lines=sourceLines;
- const invoice=result.invoice;invoice.lines=invoice.lines.map(l=>({...l,grossPrice:grossLines.find(g=>g.sku===l.sku).price}));
+ const invoice=result.invoice;
+ const customer=copy.customers?.find(c=>c.name===order.customer);
+ const dueDate=paymentDueDate(invoice.date,customer?.terms);
+ if(dueDate)invoice.dueDate=dueDate;
+ invoice.lines=invoice.lines.map(l=>({...l,grossPrice:grossLines.find(g=>g.sku===l.sku).price}));
  if(input.priceLevel!==undefined)invoice.priceLevel=input.priceLevel;
  invoice.discountPercent=calculated.percent;invoice.letterhead=letterhead;invoice.issuedBy='Admin 2';invoice.status='Diterbitkan · demo';invoice.dpp=letterhead==='A'?Number(calculated.dpp):0;invoice.ppn=letterhead==='A'?Number(calculated.ppn):0;const payable=calculated.total+BigInt(invoice.ppn);if(payable>BigInt(Number.MAX_SAFE_INTEGER))throw Error('Jumlah invoice melebihi batas aman.');invoice.amountDue=Number(payable);
  order.history.push({action:`Invoice diterbitkan Admin 2, opsi ${letterhead}, diskon ${calculated.percent}%`,at:new Date().toISOString()});Object.assign(store,copy);return result;
