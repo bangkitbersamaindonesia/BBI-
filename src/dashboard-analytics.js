@@ -26,10 +26,13 @@ export function dashboardSummary(store,today) {
     .map(bill=>documentBalance(snapshot,'supplier',bill.id));
   const dueTotal = sum(dueBills,bill=>bill.due);
   const dueUnpaid = sum(dueBills,bill=>bill.remaining);
-  const overdueInvoices = invoices => invoices.filter(row=>row.date<=today && row.dueDate?.startsWith(month) && row.dueDate<=today);
+  const overdueInvoices = store.invoices
+    .filter(row=>row.date<=today && row.dueDate?.startsWith(month) && row.dueDate<=today)
+    .map(invoice=>documentBalance(snapshot,'customer',invoice.id));
   return {
     sales, previousSales, dueTotal, dueUnpaid,
-    receivables:sum(overdueInvoices(store.invoices),invoice=>documentBalance(snapshot,'customer',invoice.id).remaining),
+    receivables:sum(overdueInvoices,invoice=>invoice.remaining),
+    receivablesDue:sum(overdueInvoices,invoice=>invoice.due),
     missingDueDates:[...store.invoices,...store.bills].filter(row=>row.date<=today && !row.dueDate).length,
     unpaid:sum(current(store.bills),bill=>documentBalance(snapshot,'supplier',bill.id).remaining),
     inventory:roundRatio(inventoryValuation(store).assetMicros,COST_SCALE),
@@ -96,6 +99,7 @@ export function mountDashboardAnalytics(root) {
         ${stats.map(([label,value,note,tone,icon])=>`<article class="stat"><div class="stat-top"><span>${label}</span><span class="stat-icon ${tone}">${icon}</span></div>
         <strong>${value===null?'—':money(value)}</strong><div class="stat-foot">${value===null?'HPP invoice belum lengkap':note}</div>
         ${tone==='blue' && icon==='↗' ? progressChart('Perubahan vs. bulan lalu',summary.sales-summary.previousSales,summary.previousSales) : ''}
+        ${icon==='↙' ? progressChart('Belum dibayar · invoice jatuh tempo bulan ini',summary.receivables,summary.receivablesDue) : ''}
         ${tone==='purple' ? progressChart('Belum dibayar · bills jatuh tempo bulan ini',summary.dueUnpaid,summary.dueTotal) : ''}</article>`).join('')}</section>
         ${summary.missingDueDates ? `<p class="sku-guidance">${summary.missingDueDates} dokumen belum memiliki jatuh tempo dan dikecualikan dari indikator jatuh tempo.</p>` : ''}
         ${salesChart(demoStore,today)}
