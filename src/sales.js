@@ -25,6 +25,7 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
   salesRoot.innerHTML=`${banner}${roleControl('sales')}<section class="panel" id="so-entry"><h2>Sales Order pelanggan</h2><p class="sku-guidance">Diisi oleh sales. Harga per pcs; 1 lusin = 12, kodi = 20, gros = 144 pcs.</p><form id="so-form"><div class="sku-form-grid">
     <label for="so-customer">Nama toko / pelanggan<input id="so-customer" name="customer" required maxlength="500" placeholder="PT / CV / nama toko" /></label>
     <label for="so-salesperson">Nama sales<select id="so-salesperson" name="salesperson" required><option value="">Pilih sales</option>${store.users.filter(u=>u.role==='sales'&&u.active).map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('')}</select></label>
+    <label>Opsi invoice<select name="letterhead" required><option value="">Pilih opsi</option><option value="A">A · PT Bangkit Bersama Indonesia · PPN</option><option value="B">B · BBI · Tanpa PPN</option></select></label>
     <label for="so-date">Tanggal kebutuhan<input id="so-date" name="deliveryDate" type="date" required /></label>
     <label class="sku-notes" for="so-address">Alamat kirim<textarea id="so-address" name="address" required maxlength="500" rows="2"></textarea></label>
     <label class="sku-notes" for="so-notes">Catatan pelanggan (opsional)<textarea id="so-notes" name="notes" maxlength="500" rows="2"></textarea></label>

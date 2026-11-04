@@ -3,6 +3,8 @@ function requireRole(role, expected) { if (role !== expected) throw new Error(`L
 const text = value => String(value ?? '').trim();
 export function submitOrder(store, input, role) {
   requireRole(role, 'sales');
+  const letterhead = input.letterhead ?? 'B';
+  if (!['A','B'].includes(letterhead)) throw Error('Pilih opsi invoice A atau B.');
   if (!text(input.customer) || !text(input.salesperson) || !text(input.address)) throw new Error('Pelanggan, nama sales, dan alamat kirim wajib diisi.');
   if ([input.customer,input.salesperson,input.address,input.notes].some(v=>text(v).length>500)) throw new Error('Isian maksimal 500 karakter.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.deliveryDate ?? '') || !Number.isFinite(Date.parse(input.deliveryDate)) || new Date(input.deliveryDate).toISOString().slice(0,10)!==input.deliveryDate) throw new Error('Tanggal kebutuhan wajib diisi.');
@@ -21,7 +23,7 @@ export function submitOrder(store, input, role) {
     if (!Number.isSafeInteger(subtotal) || !Number.isSafeInteger(total)) throw new Error('Nilai pesanan melebihi batas aman.');
     return {sku:product.sku,name:product.name,size:product.size,color:product.color,qty:String(line.qty),unit:line.unit,quantityPcs,price:Number(price),subtotal};
   });
-  const order = {id:`SO-DEMO-${String(store.orders.length+1).padStart(4,'0')}`,customer:text(input.customer),salesperson:text(input.salesperson),address:text(input.address),deliveryDate:input.deliveryDate,notes:text(input.notes),lines,total,status:'Menunggu Admin 1',history:[{action:'Diajukan sales',at:new Date().toISOString()}]};
+  const order = {id:`SO-DEMO-${String(store.orders.length+1).padStart(4,'0')}`,customer:text(input.customer),salesperson:text(input.salesperson),address:text(input.address),deliveryDate:input.deliveryDate,letterhead,notes:text(input.notes),lines,total,status:'Menunggu Admin 1',history:[{action:'Diajukan sales',at:new Date().toISOString()}]};
   store.orders.push(order); return order;
 }
 export function availablePcs(store, sku, warehouseId) {

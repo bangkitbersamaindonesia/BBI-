@@ -3,9 +3,10 @@ import { dispatchCustomerOrder } from './fulfillment-model.js';
 import { previewInvoiceAmounts } from './invoice-preview-model.js';
 export function issueCustomerInvoice(store,orderId,input,role){
  if(role!=='admin2')throw Error('Hanya Admin 2 yang dapat menerbitkan invoice customer.');
- if(!['A','B'].includes(input.letterhead))throw Error('Pilih opsi invoice A atau B.');
  if(!input.lines?.length)throw Error('Invoice harus memiliki minimal satu SKU.');
  const copy=structuredClone(store);const order=copy.orders.find(o=>o.id===orderId);if(!order)throw Error('SO tidak ditemukan.');
+ const letterhead = order.letterhead ?? 'B';
+ if (!['A','B'].includes(letterhead)) throw Error('Opsi invoice Sales Order tidak valid.');
  const seen=new Set();const grossLines=input.lines.map(raw=>{const p=copy.products.find(p=>p.sku===raw.sku);if(!p||seen.has(raw.sku))throw Error('Pilih SKU valid tanpa duplikat.');seen.add(raw.sku);const qty=String(raw.quantityPcs);const price=String(input.priceLevel === undefined ? raw.price : priceForLevel(p.purchasePrice, input.priceLevel));if(!/^\d+$/.test(qty)||!Number.isSafeInteger(Number(qty))||Number(qty)<=0||!/^\d+$/.test(price)||!Number.isSafeInteger(Number(price)))throw Error('Qty harus pcs bulat positif dan harga rupiah bulat tidak negatif.');return {sku:p.sku,price:Number(price),quantityPcs:Number(qty)};});
  const calculated=previewInvoiceAmounts({lines:grossLines},[],input.discountPercent||'0');
  const sourceLines=structuredClone(order.lines);
@@ -16,6 +17,6 @@ export function issueCustomerInvoice(store,orderId,input,role){
  order.lines=sourceLines;
  const invoice=result.invoice;invoice.lines=invoice.lines.map(l=>({...l,grossPrice:grossLines.find(g=>g.sku===l.sku).price}));
  if(input.priceLevel!==undefined)invoice.priceLevel=input.priceLevel;
- invoice.discountPercent=calculated.percent;invoice.letterhead=input.letterhead;invoice.issuedBy='Admin 2';invoice.status='Diterbitkan · demo';invoice.dpp=input.letterhead==='A'?Number(calculated.dpp):0;invoice.ppn=input.letterhead==='A'?Number(calculated.ppn):0;const payable=calculated.total+BigInt(invoice.ppn);if(payable>BigInt(Number.MAX_SAFE_INTEGER))throw Error('Jumlah invoice melebihi batas aman.');invoice.amountDue=Number(payable);
- order.history.push({action:`Invoice diterbitkan Admin 2, opsi ${input.letterhead}, diskon ${calculated.percent}%`,at:new Date().toISOString()});Object.assign(store,copy);return result;
+ invoice.discountPercent=calculated.percent;invoice.letterhead=letterhead;invoice.issuedBy='Admin 2';invoice.status='Diterbitkan · demo';invoice.dpp=letterhead==='A'?Number(calculated.dpp):0;invoice.ppn=letterhead==='A'?Number(calculated.ppn):0;const payable=calculated.total+BigInt(invoice.ppn);if(payable>BigInt(Number.MAX_SAFE_INTEGER))throw Error('Jumlah invoice melebihi batas aman.');invoice.amountDue=Number(payable);
+ order.history.push({action:`Invoice diterbitkan Admin 2, opsi ${letterhead}, diskon ${calculated.percent}%`,at:new Date().toISOString()});Object.assign(store,copy);return result;
 }
