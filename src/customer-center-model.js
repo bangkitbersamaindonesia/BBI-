@@ -10,13 +10,17 @@ export function customerDirectory(store){
 export function saveCustomer(store,input,originalName=null){
  const name=String(input.name??'').trim();if(!name||name.length>200)throw Error('Nama toko / customer wajib diisi (maksimal 200 karakter).');
  if(originalName&&name!==originalName)throw Error('Nama customer yang tersimpan tidak dapat diubah agar tautan transaksi tetap konsisten.');
- const fields=['contact','mobile','email','terms','billingAddress','shippingAddress','geography','notes'];const row={name,active:input.active!==false};
+ const fields=['contact','mobile','salesperson','email','terms','billingAddress','shippingAddress','geography','notes'];const row={name,active:input.active!==false};
  for(const field of fields){row[field]=String(input[field] ?? (field === 'shippingAddress' ? input.address : '') ?? '').trim();if(row[field].length>1000)throw Error('Isian maksimal 1.000 karakter.');}
+ if(row.salesperson && !['Doni','Lutfi','Dipa'].includes(row.salesperson))throw Error('Pilih Sales Doni, Lutfi, atau Dipa.');
  if(row.geography && !['Jawa','Luar Pulau'].includes(row.geography))throw Error('Pilih Geografi Jawa atau Luar Pulau.');
  if(row.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email))throw Error('Format email tidak valid.');
  const key=customerKey(name);store.customers??=[];const index=store.customers.findIndex(c=>customerKey(c.name)===key);
  if(!originalName&&customerDirectory(store).some(c=>customerKey(c.name)===key))throw Error('Customer sudah ada. Pilih customer lalu edit informasinya.');
- if(index>=0)store.customers[index]=row;else store.customers.push(row);return row;
+ if(index>=0){
+  if(input.email === undefined)row.email=store.customers[index].email ?? '';
+  store.customers[index]=row;
+ }else store.customers.push(row);return row;
 }
 export function customerTransactions(store,name){
  const key=customerKey(name),rows=[],invoices=store.invoices.filter(i=>customerKey(i.customer)===key),ids=new Set(invoices.map(i=>i.id));
