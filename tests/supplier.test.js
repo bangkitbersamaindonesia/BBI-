@@ -31,5 +31,5 @@ test('report filters, aggregates and CSV use only confirmed losses, never pendin
  const {s,po}=setup();assert.equal(summarizeLossSales(s.lossSales).quantityPcs,0n);recordSupplierResponse(s,po.id,response(),'admin1');
  const filtered=filterLossSales(s.lossSales,{start:'2026-10-28',end:'2026-10-28',supplier:'VEN',customer:'tok',sku:'A'});assert.equal(filtered.length,1);assert.equal(filterLossSales(s.lossSales,{start:'2026-10-29'}).length,0);
  const sum=summarizeLossSales(s.lossSales);assert.equal(sum.quantityPcs,9n);assert.equal(sum.potentialRevenue,700n);assert.equal(sum.orderCount,1);assert.equal(sum.skuCount,2);assert.equal(sum.groups[0].sku,'B');
- const csv=lossSalesCsv([{...filtered[0],customer:'=SUM(1,2)',reason:'Tidak ada, "habis"\nkonfirmasi'}]);assert.ok(csv.includes('"\'=SUM(1,2)"'));assert.ok(csv.includes('"Tidak ada, ""habis""\nkonfirmasi"'));assert.ok(csv.includes('SO-DEMO-0001'));assert.ok(csv.includes('Gudang Besar'));
+ const csv=lossSalesCsv([{...filtered[0],customer:'=SUM(1,2)',reason:'Tidak ada, "habis"\nkonfirmasi'}]);assert.ok(csv.includes('"\'=SUM(1,2)"'));assert.ok(csv.includes('"Tidak ada, ""habis""\nkonfirmasi"'));assert.ok(csv.includes(po.orderId));assert.ok(csv.includes('Gudang Besar'));
 });

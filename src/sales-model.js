@@ -13,13 +13,29 @@ export function salesLineAmounts(qty, unit, rawPrice, perUnit = false) {
   if (!Number.isSafeInteger(subtotal)) throw Error('Nilai pesanan melebihi batas aman.');
   return {quantityPcs, price:rounded(BigInt(unitPrice)), subtotal, ...(perUnit ? {unitPrice} : {})};
 }
+export function salesOrderDate(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Jakarta', year:'numeric', month:'2-digit', day:'2-digit'}).format(now);
+}
+export function nextSalesOrderNumber(orders, date) {
+  const prefix = date.slice(2).replaceAll('-', '');
+  const last = orders.reduce((max, order) => {
+    const id = String(order.id);
+    return id.length === 9 && id.startsWith(prefix) && /^\d+$/.test(id)
+      ? Math.max(max, Number(id.slice(6))) : max;
+  }, 0);
+  if (last >= 999) throw Error('Nomor Sales Order hari ini sudah mencapai 999.');
+  return prefix + String(last + 1).padStart(3, '0');
+}
 export function submitOrder(store, input, role) {
   requireRole(role, 'sales');
   if (input.customerFromCenter) {
     const customer = store.customers?.find(c => c.name === input.customer && c.active !== false);
     if (!customer || (input.salesOwner && customer.salesperson !== input.salesOwner)) throw Error('Pilih customer aktif yang sesuai dengan Sales.');
-    input = {...input, salesperson:customer.salesperson, address:customer.shippingAddress ?? customer.address,
+    input = {...input, salesperson:input.salesOwner || text(input.salesperson) || customer.salesperson, address:customer.shippingAddress ?? customer.address,
       expeditionAddress:customer.expeditionAddress};
+  }
+  if (input.customerFromCenter && !['Doni','Lutfi','Dipa'].includes(text(input.salesperson))) {
+    throw Error('Pilih Sales Doni, Lutfi, atau Dipa.');
   }
   const letterhead = input.letterhead ?? 'B';
   if (!['A','B'].includes(letterhead)) throw Error('Pilih opsi invoice A atau B.');
@@ -39,7 +55,8 @@ export function submitOrder(store, input, role) {
     if (!Number.isSafeInteger(total)) throw Error('Nilai pesanan melebihi batas aman.');
     return {sku:product.sku,name:product.name,size:product.size,color:product.color,qty:String(line.qty),unit:line.unit,...amounts};
   });
-  const order = {id:`SO-DEMO-${String(store.orders.length+1).padStart(4,'0')}`,customer:text(input.customer),salesperson:text(input.salesperson),address:text(input.address),expeditionAddress:text(input.expeditionAddress),deliveryDate:input.deliveryDate,letterhead,notes:text(input.notes),lines,total,status:'Menunggu Admin 1',history:[{action:'Diajukan sales',at:new Date().toISOString()}]};
+  const date = salesOrderDate();
+  const order = {id:nextSalesOrderNumber(store.orders,date),date,customer:text(input.customer),salesperson:text(input.salesperson),address:text(input.address),expeditionAddress:text(input.expeditionAddress),deliveryDate:input.deliveryDate,letterhead,notes:text(input.notes),lines,total,status:'Menunggu Admin 1',history:[{action:'Diajukan sales',at:new Date().toISOString()}]};
   store.orders.push(order); return order;
 }
 export function availablePcs(store, sku, warehouseId) {

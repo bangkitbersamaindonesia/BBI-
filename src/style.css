@@ -86,3 +86,13 @@ body.invoice-preview-open{overflow:auto}body.invoice-preview-open .shell{display
 .workflow-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .workflow-lane:has(.workflow-path){grid-column:1/-1}
 @media(max-width:750px){.workflow-board{grid-template-columns:minmax(0,1fr)}}
+
+.so-grid{margin-top:20px}
+.so-grid table{min-width:820px}
+.so-grid tbody tr:nth-child(even){background:#edf4ff}
+.so-grid td,.so-grid th{padding:10px;border-bottom:1px solid #e1e9f5}
+.so-grid td.so-line,.so-grid tr.so-line{border-radius:0}
+.so-grid select,.so-grid input{width:100%;min-width:70px}
+.so-grid .line-sku{max-width:210px}
+.so-grid .line-description{min-width:145px;white-space:normal}
+.so-grid .line-price-label{display:block;font-size:11px;white-space:nowrap}
