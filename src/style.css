@@ -118,3 +118,8 @@ body.invoice-preview-open{overflow:auto}body.invoice-preview-open .shell{display
   .so-print-sheet thead{display:table-header-group}
   .so-print-sheet tr{break-inside:avoid}
 }
+
+.dashboard-section{margin-top:20px}
+.dashboard-months{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;text-align:center;font-size:11px}
+.dashboard-months span,.dashboard-months small{display:block;margin-top:4px;overflow-wrap:anywhere}
+.dashboard-months small{color:#687890}

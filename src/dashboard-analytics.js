@@ -1,87 +1,91 @@
-// Dashboard analytics prototype. All figures are synthetic and MUST NOT be used for accounting.
-const $ = (selector) => document.querySelector(selector);
-const dateUTC = (y,m,d) => new Date(Date.UTC(y,m,d,12));
-const iso = (d) => d.toISOString().slice(0,10);
-const day = 86400000;
-const addDays = (d,n) => new Date(d.getTime()+n*day);
-const fmtDate = new Intl.DateTimeFormat("id-ID",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
-const fmtMoney = new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0});
-function localToday(){
-  const parts = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
-  const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
-  return dateUTC(+p.year,+p.month-1,+p.day);
+import {demoStore,subscribeDemo} from './demo-store.js';
+import {documentBalance} from './payments-model.js';
+import {inventoryValuation} from './inventory-valuation.js';
+import {COST_SCALE,roundRatio} from './margin-model.js';
+import {salesOrderDate} from './sales-model.js';
+
+const esc = value => String(value ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = value => 'Rp ' + value.toLocaleString('id-ID');
+const sum = (rows, pick) => rows.reduce((total,row) => total + BigInt(pick(row)),0n);
+
+export function dashboardSummary(store,today) {
+  const month = today.slice(0,7);
+  const current = rows => rows.filter(row => row.date?.startsWith(month) && row.date <= today);
+  const invoices = current(store.invoices);
+  const sales = sum(invoices,row=>row.total);
+  const returns = current(store.credits).filter(row=>row.type==='customer');
+  const grossProfit = sales - sum(invoices,row=>row.costTotal ?? 0)
+    - sum(returns,row=>row.total) + sum(returns,row=>row.costReversal ?? 0);
+  const snapshot = {...store};
+  for(const key of ['credits','payments','writeOffs']) snapshot[key] = store[key].filter(row=>row.date<=today);
+  return {
+    sales,
+    unpaid:sum(current(store.bills),bill=>documentBalance(snapshot,'supplier',bill.id).remaining),
+    inventory:roundRatio(inventoryValuation(store).assetMicros,COST_SCALE),
+    grossProfit,
+    missingCosts:invoices.some(invoice=>invoice.costTotal == null),
+  };
 }
-function period(type,today){
-  const y=today.getUTCFullYear(),m=today.getUTCMonth(),d=today.getUTCDate();
-  if(type==="week") return [addDays(today,-((today.getUTCDay()+6)%7)),today];
-  if(type==="quarter") return [dateUTC(y,Math.floor(m/3)*3,1),today];
-  if(type==="semester") return [dateUTC(y,Math.floor(m/6)*6,1),today];
-  if(type==="fiscal") return [dateUTC(y,0,1),today]; // fiscal year Jan-Dec until configured
-  if(type==="month") return [dateUTC(y,m,1),today];
-  return [dateUTC(y,m,d),today];
+
+function salesChart(store,today) {
+  const [year,month] = today.split('-').map(Number);
+  const months = Array.from({length:6},(_,index)=>{
+    const date = new Date(Date.UTC(year,month-6+index,1));
+    const key = date.toISOString().slice(0,7);
+    const within = row => row.date?.startsWith(key) && row.date<=today;
+    return {
+      label:new Intl.DateTimeFormat('id-ID',{month:'short',year:'2-digit',timeZone:'UTC'}).format(date),
+      sales:sum(store.invoices.filter(within),row=>row.total),
+      purchases:sum(store.bills.filter(within),row=>row.total),
+    };
+  });
+  const max = months.reduce((n,row)=>[row.sales,row.purchases].reduce((a,b)=>a>b?a:b,n),1n);
+  const points = key => months.map((row,i)=>`${i*144},${205-Number(row[key]*19000n/max)/100}`).join(' ');
+  return `<section class="panel chart-panel dashboard-section">
+    <div class="panel-head"><div><h2>Performa Penjualan</h2><p>Invoice dan bills sebelum PPN</p></div><span class="period-pill">6 bulan terakhir</span></div>
+    <div class="legend"><span><i class="dot blue-dot"></i>Penjualan</span><span><i class="dot gray-dot"></i>Pembelian</span></div>
+    <div class="plot"><svg viewBox="0 0 720 220" preserveAspectRatio="none" role="img"
+      aria-label="Tren penjualan dan pembelian enam bulan">
+      <line x1="0" y1="205" x2="720" y2="205" stroke="#dce5f0"/>
+      <polyline points="${points('purchases')}" stroke="#8796ad" stroke-dasharray="8 6" stroke-width="4" fill="none"/>
+      <polyline points="${points('sales')}" stroke="#3769de" stroke-width="4" fill="none"/>
+    </svg></div>
+    <div class="dashboard-months">${months.map(row=>`<div><strong>${esc(row.label)}</strong><span>${money(row.sales)}</span><small>${money(row.purchases)}</small></div>`).join('')}</div>
+  </section>`;
 }
-function prevYear(d){return dateUTC(d.getUTCFullYear()-1,d.getUTCMonth(),Math.min(d.getUTCDate(),new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate()));}
-// Year-over-year: week uses 52-week alignment (same weekdays), other presets
-// compare matching calendar dates last year. The date range is inclusive.
-function priorComparableRange(type,start,end){
-  if(type==="week") return [addDays(start,-364),addDays(end,-364)];
-  return [prevYear(start),prevYear(end)];
-}
-function dailyValue(d){
-  // Stable, invented demo values: source is date only, no backend or actual ledger data.
-  const t=Math.floor(d.getTime()/day);
-  const wave=800000*Math.sin(t*.17)+390000*Math.cos(t*.043);
-  return Math.round(1350000+wave+(t%7===0?-210000:0));
-}
-function buckets(start,end){
-  const n=Math.floor((end-start)/day)+1;
-  const number=Math.min(n,12);
-  const result=[];
-  for(let i=0;i<number;i++){
-    const a=Math.floor(i*n/number),b=Math.floor((i+1)*n/number);
-    let value=0;
-    for(let j=a;j<b;j++)value+=dailyValue(addDays(start,j));
-    result.push({value,label:fmtDate.format(addDays(start,a))});
-  }
-  return result;
-}
-function renderChart(current,previous){
-  const all=[...current,...(previous||[])].map(p=>p.value);
-  const maximum=Math.max(1,...all)*1.2;
-  const x=(i,n)=>40+(n===1?460:i*920/(n-1)), y=v=>222-v/maximum*195;
-  const path=(points)=>points.map((p,i)=>(i?"L":"M")+x(i,points.length).toFixed(1)+" "+y(p.value).toFixed(1)).join(" ");
-  const labels=current.map((p,i)=>'<text x="'+x(i,current.length)+'" y="267" text-anchor="middle" font-size="11" fill="#8d9bb0">'+p.label+'</text>').join("");
-  const ticks=[0,.25,.5,.75,1].map(t=>'<line x1="40" x2="960" y1="'+y(maximum*t)+'" y2="'+y(maximum*t)+'" stroke="#e9edf4"/><text x="31" y="'+(y(maximum*t)+4)+'" font-size="10" text-anchor="end" fill="#8d9bb0">'+Math.round(maximum*t/1e6)+'m</text>').join("");
-  $("#net-profit-chart").innerHTML='<svg viewBox="0 0 1000 284" role="img" aria-label="Grafik laba bersih demo dalam juta rupiah" preserveAspectRatio="none">'+ticks+(previous?'<path d="'+path(previous)+'" fill="none" stroke="#a8b4c7" stroke-width="3" stroke-dasharray="8 7" stroke-linejoin="round"/>':'')+'<path d="'+path(current)+'" fill="none" stroke="#3769de" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>'+current.map((p,i)=>'<circle cx="'+x(i,current.length)+'" cy="'+y(p.value)+'" r="4" fill="#3769de"/>').join("")+labels+'</svg>';
-}
-export function mountDashboardAnalytics(){
-  const preset=$("#date-preset"),compare=$("#compare-previous"),custom=$("#custom-dates");
-  const startInput=$("#start-date"),endInput=$("#end-date");
-  const today=localToday();
-  const [initialStart,initialEnd]=period("month",today);
-  startInput.value=iso(initialStart);endInput.value=iso(initialEnd);
+
+export function mountDashboardAnalytics(root) {
   function render(){
-    custom.hidden=preset.value!=="custom";
-    const range=preset.value==="custom"?[dateUTC(...startInput.value.split("-").map(Number).map((v,i)=>i===1?v-1:v)),dateUTC(...endInput.value.split("-").map(Number).map((v,i)=>i===1?v-1:v))]:period(preset.value,today);
-    const [start,end]=range;
-    if(!Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())||start>end){
-      $("#selected-range").textContent="Rentang tanggal tidak valid. Pastikan tanggal awal tidak melebihi tanggal akhir.";
-      $("#net-profit-chart").replaceChildren();$("#net-profit-total").textContent="—";return;
+    try {
+      const today = salesOrderDate();
+      const summary = dashboardSummary(demoStore,today);
+      const stats = [
+        ['Total Penjualan Bulan Ini',summary.sales,'Invoice yang sudah diterbitkan, sebelum PPN','blue','↗'],
+        ['Total Tagihan Bulan Ini',summary.unpaid,'Sisa bills bulan ini, termasuk PPN','purple','▣'],
+        ['Nilai Persediaan',summary.inventory,'Nilai stok seluruh gudang saat ini','amber','◫'],
+        ['Estimasi Laba Kotor Bulan Ini',summary.missingCosts ? null : summary.grossProfit,'Penjualan neto dikurangi HPP, setelah retur','green','◎'],
+      ];
+      const orders = demoStore.orders.slice(-4).reverse();
+      const activities = [
+        ...demoStore.orders.map(o=>({label:'Sales Order dibuat',detail:o.id+' · '+o.customer,at:o.history?.[0]?.at ?? o.date})),
+        ...demoStore.invoices.map(i=>({label:'Invoice diterbitkan',detail:i.id+' · '+i.customer,at:i.at ?? i.date})),
+        ...demoStore.bills.map(b=>({label:'Tagihan vendor dicatat',detail:b.id+' · '+b.supplier,at:b.at ?? b.date})),
+        ...demoStore.payments.map(p=>({label:p.type==='customer'?'Pembayaran customer':'Pembayaran vendor',detail:p.sourceId+' · '+money(BigInt(p.amount)),at:p.at ?? p.date})),
+      ].filter(row=>row.at).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,6);
+      root.innerHTML = `<section class="stats" aria-label="Ringkasan indikator bisnis">
+        ${stats.map(([label,value,note,tone,icon])=>`<article class="stat"><div class="stat-top"><span>${label}</span><span class="stat-icon ${tone}">${icon}</span></div>
+        <strong>${value===null?'—':money(value)}</strong><div class="stat-foot">${value===null?'HPP invoice belum lengkap':note}</div></article>`).join('')}</section>
+        ${salesChart(demoStore,today)}
+        <section class="panel table-panel dashboard-section"><h2>Sales Order Terbaru</h2>
+        <div class="table-scroll"><table><thead><tr><th>NO. ORDER</th><th>CUSTOMER</th><th>PRODUK</th><th>TOTAL</th><th>STATUS</th></tr></thead>
+        <tbody>${orders.map(o=>`<tr><td>${esc(o.id)}</td><td>${esc(o.customer)}</td><td>${esc(o.lines.map(l=>l.name).join(', '))}</td><td>${money(o.total)}</td><td>${esc(o.status)}</td></tr>`).join('')||'<tr><td colspan="5">Belum ada Sales Order.</td></tr>'}</tbody></table></div></section>
+        <section class="panel activities dashboard-section"><h2>Aktivitas Terbaru</h2>
+        <div class="activity-list">${activities.map(row=>`<div class="activity"><span class="activity-icon blue">•</span><div><strong>${esc(row.label)}</strong><p>${esc(row.detail)}</p><small>${esc(new Date(row.at).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'}))}</small></div></div>`).join('')||'<p>Belum ada aktivitas transaksi.</p>'}</div></section>`;
+    } catch(error) {
+      root.innerHTML = `<p role="alert">${esc(error.message)}</p>`;
     }
-    const previous=compare.checked?priorComparableRange(preset.value,start,end):null;
-    const currentBuckets=buckets(start,end);
-    const lastBuckets=previous?buckets(...previous):null;
-    const sum=(a)=>a.reduce((t,x)=>t+x.value,0);
-    const currentTotal=sum(currentBuckets),previousTotal=lastBuckets?sum(lastBuckets):null;
-    $("#selected-range").textContent="Periode: "+fmtDate.format(start)+" – "+fmtDate.format(end)+(previous?" | Periode sama tahun lalu: "+fmtDate.format(previous[0])+" – "+fmtDate.format(previous[1]):"")+" · Tahun fiskal diasumsikan Jan–Des";
-    $("#net-profit-total").textContent=fmtMoney.format(currentTotal)+(previousTotal===null?"":" | LY "+fmtMoney.format(previousTotal)+(previousTotal===0?"":" ("+((currentTotal-previousTotal)/Math.abs(previousTotal)*100).toFixed(1)+"% YoY)"));
-    $("#last-year-legend").hidden=!compare.checked;
-    $("#net-profit-chart").setAttribute("aria-label","Laba bersih ilustrasi "+fmtMoney.format(currentTotal)+(previousTotal===null?"":" dibanding "+fmtMoney.format(previousTotal)+" tahun lalu"));
-    renderChart(currentBuckets,lastBuckets);
   }
-  preset.addEventListener("change",render);
-  compare.addEventListener("change",render);
-  startInput.addEventListener("change",render);
-  endInput.addEventListener("change",render);
+  subscribeDemo(render);
   render();
 }
