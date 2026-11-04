@@ -1,3 +1,4 @@
+import {arAgingSummary} from './ar-aging-model.js';
 import {demoStore,subscribeDemo} from './demo-store.js';
 import {documentBalance} from './payments-model.js';
 import {inventoryValuation} from './inventory-valuation.js';
@@ -39,6 +40,32 @@ export function dashboardSummary(store,today) {
     grossProfit,
     missingCosts:invoices.some(invoice=>invoice.costTotal == null),
   };
+}
+
+export function overdueCollectionTotals(store, today) {
+  const aging = arAgingSummary(store, today);
+  const totals = [0n, 0n, 0n, 0n];
+  for (const {documents} of aging.rows) {
+    for (const invoice of documents) {
+      if (invoice.hasDue && invoice.bucket > 0 && invoice.amount > 0n) {
+        totals[invoice.bucket - 1] += invoice.amount;
+      }
+    }
+  }
+  return totals;
+}
+
+function collectionPanel(store, today) {
+  const totals = overdueCollectionTotals(store, today);
+  const groups = [['<30', '1–30 hari'], ['<60', '31–60 hari'], ['<90', '61–90 hari'], ['NPL', 'Lebih dari 90 hari']];
+  return `<section class="panel dashboard-section" aria-labelledby="dashboard-collection-title">
+    <div class="panel-head"><div><h2 id="dashboard-collection-title">Total A/R Aging yang Harus Segera Ditagih</h2>
+    <p>Sisa saldo invoice lewat jatuh tempo dari seluruh periode</p></div>
+    <strong>${money(totals.reduce((total, amount) => total + amount, 0n))}</strong></div>
+    <div class="stats">${groups.map(([label, days], index) => `<article class="stat">
+      <div class="stat-top"><span>${esc(label)}</span><span>${days}</span></div>
+      <strong>${money(totals[index])}</strong></article>`).join('')}</div>
+  </section>`;
 }
 
 function salesChart(store,today) {
@@ -102,6 +129,7 @@ export function mountDashboardAnalytics(root) {
         ${icon==='↙' ? progressChart('Belum dibayar · invoice jatuh tempo bulan ini',summary.receivables,summary.receivablesDue) : ''}
         ${tone==='purple' ? progressChart('Belum dibayar · bills jatuh tempo bulan ini',summary.dueUnpaid,summary.dueTotal) : ''}</article>`).join('')}</section>
         ${summary.missingDueDates ? `<p class="sku-guidance">${summary.missingDueDates} dokumen belum memiliki jatuh tempo dan dikecualikan dari indikator jatuh tempo.</p>` : ''}
+        ${collectionPanel(demoStore,today)}
         ${salesChart(demoStore,today)}
         <section class="panel table-panel dashboard-section"><h2>Sales Order Terbaru</h2>
         <div class="table-scroll"><table><thead><tr><th>NO. ORDER</th><th>CUSTOMER</th><th>PRODUK</th><th>TOTAL</th><th>STATUS</th></tr></thead>
