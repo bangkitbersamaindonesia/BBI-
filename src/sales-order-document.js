@@ -1,9 +1,12 @@
+import {invoiceTaxAmounts} from './invoice-preview-model.js';
+
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => (
   {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]
 ));
 const money = value => 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
 
 export function salesOrderDocument(order) {
+  const tax = order.letterhead === 'A' ? invoiceTaxAmounts(BigInt(order.total)) : null;
   return `<article class="so-document">
     <header><p>Bangkit Bersama Indonesia</p><h2>Sales Order</h2></header>
     <dl>
@@ -12,7 +15,6 @@ export function salesOrderDocument(order) {
       <dt>Nama toko / customer</dt><dd>${escape(order.customer)}</dd>
       <dt>Sales</dt><dd>${escape(order.salesperson)}</dd>
       <dt>Tanggal kebutuhan</dt><dd>${escape(order.deliveryDate)}</dd>
-      <dt>Opsi invoice</dt><dd>${escape(order.letterhead ?? 'B')}</dd>
       <dt>Alamat kirim</dt><dd>${escape(order.address || '—')}</dd>
       <dt>Alamat ekspedisi</dt><dd>${escape(order.expeditionAddress || '—')}</dd>
     </dl>
@@ -24,7 +26,12 @@ export function salesOrderDocument(order) {
         return `<tr><td>${escape(line.sku)}</td><td>${escape([line.name,line.size,line.color].filter(Boolean).join(' · '))}</td>
           <td>${escape(line.qty)}</td><td>${escape(line.unit)}</td><td>${money(rate)}</td><td>${money(line.subtotal)}</td></tr>`;
       }).join('')}</tbody>
-      <tfoot><tr><th colspan="5">Total barang</th><td>${money(order.total)}</td></tr></tfoot>
+      <tfoot>
+        ${tax ? `<tr><th colspan="5">Sub total barang</th><td>${money(order.total)}</td></tr>
+        <tr><th colspan="5">DPP nilai lain2</th><td>${money(tax.dpp)}</td></tr>
+        <tr><th colspan="5">PPN 12%</th><td>${money(tax.ppn)}</td></tr>` : ''}
+        <tr><th colspan="5">Jumlah yang harus dibayar</th><td>${money(tax?.amountDue ?? order.total)}</td></tr>
+      </tfoot>
     </table></div>
     <p class="so-document-notes">Catatan<br>${escape(order.notes || '—')}</p>
   </article>`;

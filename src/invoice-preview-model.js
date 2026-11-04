@@ -1,3 +1,9 @@
+export function invoiceTaxAmounts(net) {
+ const dpp = (net * 11n + 6n) / 12n;
+ const ppn = (dpp * 12n + 50n) / 100n;
+ return {dpp, ppn, amountDue:net + ppn};
+}
+
 // Preview-only calculations; source invoice and credit records stay immutable.
 export function previewInvoiceAmounts(invoice,credits,percent='0'){
  const raw=String(percent).trim();
@@ -8,8 +14,8 @@ export function previewInvoiceAmounts(invoice,credits,percent='0'){
  const total=lines.reduce((s,l)=>s+l.discountedSubtotal,0n);
  const returned=new Map();let creditTotal=0n;
  for(const credit of credits){for(const line of credit.lines){const source=lines[line.lineIndex];if(!source)throw Error('Baris retur tidak ditemukan pada invoice.');const qty=(returned.get(line.lineIndex)||0n)+BigInt(line.quantityPcs);if(qty>BigInt(source.quantityPcs))throw Error('Qty retur melebihi invoice.');returned.set(line.lineIndex,qty);creditTotal+=source.discountedPrice*BigInt(line.quantityPcs);}}
- const net=total-creditTotal;const dpp=(net*11n+6n)/12n;const ppn=(dpp*12n+50n)/100n;
- return {percent:String(Number(rate)/100),lines,total,credits:creditTotal,net,dpp,ppn,amountDue:net+ppn};
+ const net=total-creditTotal;
+ return {percent:String(Number(rate)/100),lines,total,credits:creditTotal,net,...invoiceTaxAmounts(net)};
 }
 export function setPreviewDiscount(settings,id,percent,role){
  if(role!=='admin2')throw Error('Hanya Admin 2 yang dapat mengisi diskon.');
