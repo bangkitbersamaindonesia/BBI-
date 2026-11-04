@@ -1,7 +1,7 @@
 import {salesOrderDocument, printSalesOrder} from './sales-order-document.js';
 import { issueCustomerInvoice } from './customer-invoice-model.js';
 import { finalizeBillDraft } from './bill-draft-model.js';
-import { submitSalesWorkflow, editPurchaseOrder, purchaseOrderText, createStockPurchaseOrder } from './workflow-model.js';
+import { submitSalesWorkflow, editSalesWorkflow, deleteSalesWorkflow, canChangeSalesOrder, editPurchaseOrder, purchaseOrderText, createStockPurchaseOrder } from './workflow-model.js';
 import { poEditor, readEditor, handleEditor, editorRow } from './workflow-editor.js';
 import { mountReturnHandlers } from './returns.js';
 import { fulfillmentPanel, readDispatch } from './fulfillment.js';
@@ -30,10 +30,16 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
     <button type="button" class="secondary-button" data-so-action="next" aria-label="Sales Order sesudahnya">→</button>
     <button type="button" class="secondary-button" data-so-action="new">New</button>
     <button type="submit" class="primary-button" data-so-action="save" form="so-form">Save</button>
+    <button type="button" class="secondary-button" data-so-action="edit">Edit</button>
+    <button type="button" class="secondary-button" data-so-action="delete">Delete</button>
     <button type="button" class="secondary-button" data-so-action="pdf">PDF</button>
   </div>
   <dialog id="so-find"><h2>Find Sales Order</h2><label>Cari nomor SO atau customer<input type="search" /></label>
     <div class="so-find-results"></div><form method="dialog"><button class="secondary-button">Tutup</button></form>
+  </dialog>
+  <dialog id="so-delete"><h2>Hapus Sales Order</h2><p></p>
+    <form method="dialog"><button class="secondary-button" value="cancel">Batal</button>
+    <button class="primary-button" value="delete">Hapus SO</button></form>
   </dialog>
   <div id="so-saved" hidden></div>
   <form id="so-form"><p class="sku-guidance">Diisi oleh sales. Harga mengikuti satuan yang dipilih; 1 lusin = 12, kodi = 20, gros = 144 pcs.</p><div class="sku-form-grid">
@@ -61,6 +67,22 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
   const findResults = findDialog.querySelector('.so-find-results');
   const visibleOrders = () => store.orders.filter(order => !lockedSales || order.salesperson === currentUser.name);
   let selectedOrderId = null;
+  let editingOrderId = null;
+  let pendingDeleteId = null;
+  const owner = lockedSales ? currentUser.name : null;
+  const deleteDialog = salesRoot.querySelector('#so-delete');
+  deleteDialog.addEventListener('close', () => {
+    const id = pendingDeleteId;
+    pendingDeleteId = null;
+    if (deleteDialog.returnValue !== 'delete' || !id) return;
+    try {
+      deleteSalesWorkflow(store,id,role,owner);
+      resetOrderForm();
+      showOrder(null);
+      notifyDemo();
+      setMessage(salesRoot, `SO ${id} dihapus. Alokasi stok dan draft PO terkait dilepas.`);
+    } catch (error) {setMessage(salesRoot,error.message);}
+  });
   function showOrder(id = selectedOrderId) {
     const orders = visibleOrders();
     const index = orders.findIndex(order => order.id === id);
@@ -73,8 +95,13 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
     toolbar.querySelector('[data-so-action="next"]').disabled = index < 0 || index === orders.length - 1;
     toolbar.querySelector('[data-so-action="save"]').disabled = Boolean(order);
     toolbar.querySelector('[data-so-action="pdf"]').disabled = !order;
+    const changeable = canChangeSalesOrder(store,order,role,owner);
+    for(const action of ['edit','delete']) toolbar.querySelector(`[data-so-action="${action}"]`).disabled = !changeable;
+    toolbar.querySelector('[data-so-action="find"]').disabled = Boolean(editingOrderId);
+    if(editingOrderId)toolbar.querySelector('[data-so-action="previous"]').disabled=true;
   }
   function resetOrderForm() {
+    editingOrderId = null;
     form.reset();
     refreshOrderNumber();
     fillCustomer();
@@ -112,14 +139,35 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
       resetOrderForm();
       showOrder(null);
       form.elements.customer.focus();
+    } else if (action === 'edit' && canChangeSalesOrder(store,orders[index],role,owner)) {
+      const order = orders[index];
+      editingOrderId = order.id;
+      showOrder(null);
+      form.elements.orderNumber.value = order.id;
+      form.elements.orderDate.value = order.date ?? '';
+      form.elements.customer.value = order.customer;
+      fillCustomer();
+      form.elements.salesperson.value = order.salesperson;
+      form.elements.letterhead.value = order.letterhead ?? 'B';
+      form.elements.deliveryDate.value = order.deliveryDate;
+      form.elements.notes.value = order.notes ?? '';
+      linesRoot.replaceChildren();
+      order.lines.forEach(line => addLine(line));
+      setMessage(salesRoot, `Mengedit SO ${order.id}. Pilih Save untuk menyimpan atau New untuk membatalkan perubahan.`);
+    } else if (action === 'delete' && canChangeSalesOrder(store,orders[index],role,owner)) {
+      pendingDeleteId = orders[index].id;
+      deleteDialog.querySelector('p').textContent = `Hapus SO ${pendingDeleteId} beserta draft PO terkait? Alokasi stok akan dilepas.`;
+      deleteDialog.returnValue = 'cancel';
+      deleteDialog.showModal();
     } else if (action === 'pdf' && index >= 0) {
       printSalesOrder(orders[index]);
     }
   });
   function refreshOrderNumber() {
+    if(editingOrderId)return;
     const date = salesOrderDate();
     form.elements.orderDate.value = date;
-    try {form.elements.orderNumber.value = nextSalesOrderNumber(store.orders, date);}
+    try {form.elements.orderNumber.value = nextSalesOrderNumber([...store.orders,...(store.deletedOrders ?? [])], date);}
     catch {form.elements.orderNumber.value = 'Urutan penuh';}
   }
   form.elements.salesperson.disabled = lockedSales;
@@ -140,7 +188,7 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
   }
   form.elements.customer.addEventListener('change', fillCustomer);
   function productOptions(selected='') {return '<option value="">Pilih SKU</option>'+store.products.map(p=>`<option value="${esc(p.sku)}" ${p.sku===selected?'selected':''}>${esc(p.sku+' · '+p.name+' · '+p.size+' · '+p.color)}</option>`).join('');}
-  function addLine() {
+  function addLine(saved = null) {
     const id=++lineId;
     const line=document.createElement('tr'); line.className='so-line';
     line.innerHTML=`<td><select class="line-sku" aria-label="SKU item ${id}" required>${productOptions()}</select></td>
@@ -150,6 +198,14 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
     <td><label><span class="line-price-label">Harga jual (Rp / pcs)</span><input class="line-price" type="number" min="0" step="1" required /></label></td>
     <td class="line-summary total">—</td>
     <td><button class="secondary-button remove-so-line" type="button" aria-label="Hapus item ${id}">Hapus</button></td>`;
+    if (saved?.sku) {
+      line.querySelector('.line-sku').value = saved.sku;
+      line.querySelector('.line-description').textContent = [saved.name,saved.size,saved.color].filter(Boolean).join(' · ');
+      line.querySelector('.line-qty').value = saved.qty;
+      line.querySelector('.line-unit').value = saved.unit;
+      line.querySelector('.line-price-label').textContent = `Harga jual (Rp / ${saved.unit})`;
+      line.querySelector('.line-price').value = saved.unitPrice ?? saved.price * UNITS[saved.unit];
+    }
     linesRoot.append(line); preview();
   }
   function readLines() {return [...linesRoot.querySelectorAll('.so-line')].map(line=>({sku:line.querySelector('.line-sku').value,qty:line.querySelector('.line-qty').value,unit:line.querySelector('.line-unit').value,price:line.querySelector('.line-price').value}));}
@@ -201,7 +257,13 @@ export function mountSales(salesRoot,purchasingRoot,currentUser=null) {
   form.addEventListener('submit',e=>{
     e.preventDefault();
     if (selectedOrderId) return;
-    try {const {order:o,po}=submitSalesWorkflow(store,{...Object.fromEntries(new FormData(form)),customerFromCenter:true,salesOwner:lockedSales?currentUser.name:null,pricePerUnit:true,lines:readLines()},role); resetOrderForm();showOrder(o.id);notifyDemo();setMessage(salesRoot,`${o.id} diajukan; stok seluruh gudang dialokasikan. ${po?po.id+' otomatis dibuat. Admin 1 memilih supplier dan mengotorisasi di Purchasing.':'Stok mencukupi, tanpa PO.'}`);}
+    try {
+      const input={...Object.fromEntries(new FormData(form)),customerFromCenter:true,salesOwner:owner,pricePerUnit:true,lines:readLines()};
+      const edited=Boolean(editingOrderId);
+      const {order:o,po}=edited ? editSalesWorkflow(store,editingOrderId,input,role) : submitSalesWorkflow(store,input,role);
+      resetOrderForm();showOrder(o.id);notifyDemo();
+      setMessage(salesRoot,`SO ${o.id} ${edited?'diperbarui':'disimpan'}. ${po ? po.id+' dibuat sebagai draft PO.' : 'Stok mencukupi, tanpa PO.'}`);
+    }
     catch(error){setMessage(salesRoot,error.message);}
   });
   salesRoot.querySelector('#so-orders').addEventListener('click',e=>{

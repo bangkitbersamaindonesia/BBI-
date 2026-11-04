@@ -26,7 +26,7 @@ export function nextSalesOrderNumber(orders, date) {
   if (last >= 999) throw Error('Nomor Sales Order hari ini sudah mencapai 999.');
   return prefix + String(last + 1).padStart(3, '0');
 }
-export function submitOrder(store, input, role) {
+export function submitOrder(store, input, role, existing = null) {
   requireRole(role, 'sales');
   if (input.customerFromCenter) {
     const customer = store.customers?.find(c => c.name === input.customer && c.active !== false);
@@ -55,8 +55,8 @@ export function submitOrder(store, input, role) {
     if (!Number.isSafeInteger(total)) throw Error('Nilai pesanan melebihi batas aman.');
     return {sku:product.sku,name:product.name,size:product.size,color:product.color,qty:String(line.qty),unit:line.unit,...amounts};
   });
-  const date = salesOrderDate();
-  const order = {id:nextSalesOrderNumber(store.orders,date),date,customer:text(input.customer),salesperson:text(input.salesperson),address:text(input.address),expeditionAddress:text(input.expeditionAddress),deliveryDate:input.deliveryDate,letterhead,notes:text(input.notes),lines,total,status:'Menunggu Admin 1',history:[{action:'Diajukan sales',at:new Date().toISOString()}]};
+  const date = existing?.date ?? salesOrderDate();
+  const order = {id:existing?.id ?? nextSalesOrderNumber([...store.orders,...(store.deletedOrders ?? [])],date),date,customer:text(input.customer),salesperson:text(input.salesperson),address:text(input.address),expeditionAddress:text(input.expeditionAddress),deliveryDate:input.deliveryDate,letterhead,notes:text(input.notes),lines,total,status:'Menunggu Admin 1',history:[{action:'Diajukan sales',at:new Date().toISOString()}]};
   store.orders.push(order); return order;
 }
 export function availablePcs(store, sku, warehouseId) {
@@ -84,6 +84,11 @@ export function reviewOrder(store, id, role) {
   order.history.push({action:'Stok diperiksa Admin 1; alokasi demo dicatat',at:new Date().toISOString()});
   return order;
 }
+export function nextPurchaseOrderId(store) {
+  const ids = [...store.purchaseOrders.map(po=>po.id), ...(store.deletedPurchaseOrderIds ?? [])];
+  const last = ids.reduce((max,id)=>Math.max(max, Number(/^PO-DEMO-(\d+)$/.exec(id)?.[1] ?? 0)),0);
+  return 'PO-DEMO-' + String(last + 1).padStart(4,'0');
+}
 export function createPurchaseOrder(store, orderId, input, role) {
   requireRole(role,'admin1');
   const order=store.orders.find(o=>o.id===orderId);
@@ -97,7 +102,7 @@ export function createPurchaseOrder(store, orderId, input, role) {
     if (!Number.isSafeInteger(subtotal)||!Number.isSafeInteger(total)) throw new Error('Nilai PO melebihi batas aman.');
     return {sku:l.sku,quantityPcs:l.shortage,price,subtotal};
   });
-  const po={id:`PO-DEMO-${String(store.purchaseOrders.length+1).padStart(4,'0')}`,orderId,supplier:text(input.supplier),warehouseId:input.warehouseId,lines,total,status:'Draft',history:[{action:'Draft dibuat Admin 1',at:new Date().toISOString()}]};
+  const po={id:nextPurchaseOrderId(store),orderId,supplier:text(input.supplier),warehouseId:input.warehouseId,lines,total,status:'Draft',history:[{action:'Draft dibuat Admin 1',at:new Date().toISOString()}]};
   store.purchaseOrders.push(po); order.status='PO dibuat'; order.history.push({action:`Draft ${po.id} dibuat`,at:new Date().toISOString()}); return po;
 }
 export function readyPurchaseOrder(store,id,role) {
