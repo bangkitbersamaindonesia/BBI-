@@ -1,4 +1,4 @@
-export const SALES_PAGES=['Sales','Sales Tools','Sales Report'];
+export const SALES_PAGES=['Sales','Sales Tools','Sales Report','Customer Center'];
 export const ADMIN_RESTRICTED_PAGES=['Dashboard','Accounting','Users','Reports','Sales Report'];
 export function canAccessPage(user,page){
  if(!user?.active)return false;

@@ -1,13 +1,30 @@
 import { documentTax } from './ppn-model.js';
 import { documentBalance } from './payments-model.js';
 export const customerKey=name=>String(name??'').trim().toLocaleLowerCase('id-ID');
-export function customerDirectory(store){
- const entries=new Map((store.customers??[]).map(c=>[customerKey(c.name),{...c,balance:0n}]));
- for(const doc of [...store.orders,...store.invoices]){const key=customerKey(doc.customer);if(!key)continue;if(!entries.has(key))entries.set(key,{name:doc.customer,active:true,address:doc.address??'',balance:0n});else if(!entries.get(key).address&&doc.address)entries.get(key).address=doc.address;}
- for(const invoice of store.invoices){const balance=documentBalance(store,'customer',invoice.id);entries.get(customerKey(invoice.customer)).balance+=balance.remaining-balance.creditBalance;}
+function customerOwner(store, user) {
+ if (!user) return null;
+ const identity = store.users?.find(row => row.id === user.id && row.active && row.role === user.role);
+ if (!identity) throw Error('User tidak aktif atau tidak dikenal.');
+ return identity.role === 'sales' ? identity.name : null;
+}
+function canViewCustomer(store, name, owner) {
+ return !owner || store.customers?.some(customer =>
+  customerKey(customer.name) === customerKey(name) && customer.salesperson === owner);
+}
+export function customerDirectory(store,user=null){
+ const owner=customerOwner(store,user);
+ const entries=new Map((store.customers??[]).filter(c=>!owner||c.salesperson===owner).map(c=>[customerKey(c.name),{...c,balance:0n}]));
+ for(const doc of [...store.orders,...store.invoices]){if(!canViewCustomer(store,doc.customer,owner))continue;const key=customerKey(doc.customer);if(!key)continue;if(!entries.has(key))entries.set(key,{name:doc.customer,active:true,address:doc.address??'',balance:0n});else if(!entries.get(key).address&&doc.address)entries.get(key).address=doc.address;}
+ for(const invoice of store.invoices){if(!canViewCustomer(store,invoice.customer,owner))continue;const balance=documentBalance(store,'customer',invoice.id);entries.get(customerKey(invoice.customer)).balance+=balance.remaining-balance.creditBalance;}
  return [...entries.values()].sort((a,b)=>a.name.localeCompare(b.name,'id'));
 }
-export function saveCustomer(store,input,originalName=null){
+export function saveCustomer(store,input,originalName=null,user=null){
+ const owner=customerOwner(store,user);
+ if(owner){
+  if(originalName && !canViewCustomer(store,originalName,owner))throw Error('Customer ini bukan milik Sales yang sedang login.');
+  input={...input,salesperson:owner};
+ }
+
  const name=String(input.name??'').trim();if(!name||name.length>200)throw Error('Nama toko / customer wajib diisi (maksimal 200 karakter).');
  if(originalName&&name!==originalName)throw Error('Nama customer yang tersimpan tidak dapat diubah agar tautan transaksi tetap konsisten.');
  const fields=['contact','mobile','salesperson','email','terms','billingAddress','shippingAddress','expeditionAddress','geography','notes'];const row={name,active:input.active!==false};
@@ -22,7 +39,10 @@ export function saveCustomer(store,input,originalName=null){
   store.customers[index]=row;
  }else store.customers.push(row);return row;
 }
-export function customerTransactions(store,name){
+export function customerTransactions(store,name,user=null){
+ const owner=customerOwner(store,user);
+ if(!canViewCustomer(store,name,owner))throw Error('Customer ini bukan milik Sales yang sedang login.');
+
  const key=customerKey(name),rows=[],invoices=store.invoices.filter(i=>customerKey(i.customer)===key),ids=new Set(invoices.map(i=>i.id));
  for(const o of store.orders.filter(o=>customerKey(o.customer)===key))rows.push({type:'Sales Order',id:o.id,date:o.date??o.history?.[0]?.at?.slice(0,10)??'',account:'Sales Orders',amount:BigInt(o.total),status:o.status??'',open:false});
  for(const i of invoices){const b=documentBalance(store,'customer',i.id);rows.push({type:'Invoice',id:i.id,date:i.date,account:'Accounts Receivable',amount:b.total,status:b.status,open:b.remaining>0n});}

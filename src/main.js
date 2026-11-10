@@ -120,6 +120,7 @@ function logoutWorkspace() {
 }
 
 if(selectedUser){
+ if(canAccessPage(selectedUser,'Customer Center'))mountCustomerCenter(document.querySelector('#customer-center-content'),selectedUser);
  mountWorkflowHome(document.querySelector('#workflow-home'),selectedUser,(page,target)=>{
   setPage(page);
   if(target)document.querySelector(target)?.scrollIntoView({block:'start'});
@@ -127,7 +128,7 @@ if(selectedUser){
  if(canAccessPage(selectedUser,'Sales Report'))mountSalesReport(document.querySelector('#sales-report-content'),selectedUser);
  if(selectedUser.role!=='sales'){
 if(canAccessPage(selectedUser,'Vendor Center'))mountVendorCenter(document.querySelector('#vendor-center-content'));
-if(canAccessPage(selectedUser,'Customer Center'))mountCustomerCenter(document.querySelector('#customer-center-content'));
+
 if(canAccessPage(selectedUser,'Dashboard'))mountDashboardAnalytics(dashboard, logoutWorkspace);
 else dashboard.replaceChildren();
 

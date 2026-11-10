@@ -5,3 +5,19 @@ const store=()=>({customers:[],orders:[{id:'SO1',customer:'Toko A',address:'Sura
 test('Customer Center derives AR and signed transactions including PPN, credits, payments, write-offs',()=>{const s=store();s.credits.push({id:'CR1',type:'customer',sourceId:'INV1',date:'2026-11-03',total:100});s.payments.push({id:'PAY1',type:'customer',sourceId:'INV1',date:'2026-11-04',amount:'500',accountId:'BANK'});s.writeOffs.push({id:'WO1',type:'customer',sourceId:'INV1',date:'2026-11-04',amount:'99',accountId:'EXP'});assert.equal(customerDirectory(s)[0].balance,400n);const rows=customerTransactions(s,'toko a');assert.equal(rows.find(r=>r.type==='Invoice').amount,1110n);assert.equal(rows.find(r=>r.type==='Retur / Credit').amount,-111n);assert.equal(rows.find(r=>r.type==='Payment').amount,-500n);assert.equal(rows.length,5);assert.equal(rows.find(r=>r.type==='Invoice').open,true);assert.equal(rows.find(r=>r.type==='Sales Order').date,'2026-11-01');});
 test('Master records merge with SO labels, validate duplicates and preserve customer identity',()=>{const s=store();saveCustomer(s,{name:'Toko A',contact:'Ibu Ani',email:'ani@example.com',active:false},'Toko A');const list=customerDirectory(s);assert.equal(list.length,1);assert.equal(list[0].active,false);assert.equal(list[0].contact,'Ibu Ani');assert.equal(list[0].address,'Surabaya');assert.throws(()=>saveCustomer(s,{name:'toko a'}),/sudah ada/);assert.throws(()=>saveCustomer(s,{name:'Changed'},'Toko A'),/tidak dapat diubah/);assert.throws(()=>saveCustomer(s,{name:'B',email:'invalid'}),/email/);saveCustomer(s,{name:'B',active:true});assert.equal(customerDirectory(s).length,2);});
 test('Overpaid invoices show customer credit and unrelated supplier records stay out',()=>{const s=store();s.payments.push({id:'P1',type:'customer',sourceId:'INV1',amount:'1200',date:'2026-11-02'},{id:'P2',type:'supplier',sourceId:'INV1',amount:'50',date:'2026-11-02'});assert.equal(customerDirectory(s)[0].balance,-90n);assert.equal(customerTransactions(s,'Toko A').length,3);});
+
+test('Named Sales can view and edit only assigned customers and cannot reassign ownership',()=>{
+ const user={id:'D',name:'Doni',role:'sales',active:true};
+ const other={id:'L',name:'Lutfi',role:'sales',active:true};
+ const s=store();s.users=[user,other];
+ s.customers=[{name:'Toko A',salesperson:'Doni'},{name:'Toko L',salesperson:'Lutfi'}];
+ assert.deepEqual(customerDirectory(s,user).map(c=>c.name),['Toko A']);
+ assert.throws(()=>customerTransactions(s,'Toko L',user));
+ assert.throws(()=>saveCustomer(s,{name:'Toko L'},'Toko L',user));
+ saveCustomer(s,{name:'Toko A',contact:'Kontak baru',salesperson:'Lutfi'},'Toko A',user);
+ assert.equal(s.customers[0].salesperson,'Doni');
+ assert.equal(s.customers[0].contact,'Kontak baru');
+ saveCustomer(s,{name:'Toko baru',salesperson:'Lutfi'},null,user);
+ assert.equal(s.customers.find(c=>c.name==='Toko baru').salesperson,'Doni');
+ assert.deepEqual(customerDirectory(s,other).map(c=>c.name),['Toko L']);
+});
