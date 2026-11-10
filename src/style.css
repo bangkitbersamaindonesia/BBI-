@@ -127,3 +127,11 @@ body.invoice-preview-open{overflow:auto}body.invoice-preview-open .shell{display
 .dashboard-meter{height:7px;margin-top:7px;border-radius:8px;background:#e5edf9;overflow:hidden}
 .dashboard-meter span{display:block;height:100%;background:#346be0}
 .dashboard-meter.down span{background:#c74641}
+.collection-card{text-align:left;width:100%;color:inherit;cursor:pointer}
+.collection-card:hover{outline:2px solid #9dc2ff}
+.collection-card small{display:block;margin-top:12px;color:#346be0}
+.collection-dialog{width:min(980px,94vw);border:1px solid #dbe2ec;border-radius:14px;padding:24px}
+.collection-dialog::backdrop{background:#12244066}
+.collection-dialog table{width:100%;min-width:650px}
+.collection-dialog td,.collection-dialog th{padding:10px;text-align:left}
+.collection-dialog tr[hidden]{display:none!important}

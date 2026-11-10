@@ -55,17 +55,47 @@ export function overdueCollectionTotals(store, today) {
   return totals;
 }
 
-function collectionPanel(store, today) {
+export function collectionPanel(store, today) {
   const totals = overdueCollectionTotals(store, today);
   const groups = [['<30', '1–30 hari'], ['<60', '31–60 hari'], ['<90', '61–90 hari'], ['NPL', 'Lebih dari 90 hari']];
   return `<section class="panel dashboard-section" aria-labelledby="dashboard-collection-title">
     <div class="panel-head"><div><h2 id="dashboard-collection-title">Total A/R Aging yang Harus Segera Ditagih</h2>
     <p>Sisa saldo invoice lewat jatuh tempo dari seluruh periode</p></div>
-    <strong>${money(totals.reduce((total, amount) => total + amount, 0n))}</strong></div>
-    <div class="stats">${groups.map(([label, days], index) => `<article class="stat">
+    <button type="button" class="secondary-button" data-collection="all">Lihat semua · ${money(totals.reduce((total, amount) => total + amount, 0n))}</button></div>
+    <div class="stats">${groups.map(([label, days], index) => `<button type="button" class="stat collection-card" data-collection="${index+1}">
       <div class="stat-top"><span>${esc(label)}</span><span>${days}</span></div>
-      <strong>${money(totals[index])}</strong></article>`).join('')}</div>
+      <strong>${money(totals[index])}</strong><small>Lihat tagihan →</small></button>`).join('')}</div>
+    <dialog class="collection-dialog"><h2>Tagihan customer yang harus ditagih</h2>
+      <p>Posisi ${esc(today)} · <span class="collection-filter-label">Semua keterlambatan</span></p>
+      <div class="table-scroll"><table><thead><tr><th>Nama toko / customer</th><th>Invoice</th><th>Jatuh tempo</th><th>Terlambat</th><th>Sisa tagihan</th></tr></thead>
+      <tbody>${arAgingSummary(store,today).rows.flatMap(customer=>customer.documents
+        .filter(invoice=>invoice.hasDue && invoice.bucket>0 && invoice.amount>0n)
+        .map(invoice=>`<tr data-collection-bucket="${invoice.bucket}"><td>${esc(customer.name)}</td><td>${esc(invoice.id)}</td><td>${esc(invoice.baseDate)}</td><td>${invoice.days} hari</td><td>${money(invoice.amount)}</td></tr>`)).join('')}</tbody></table></div>
+      <p class="collection-empty" hidden>Tidak ada tagihan dalam kelompok ini.</p>
+      <p>Total <strong class="collection-selected-total"></strong></p>
+      <form method="dialog"><button class="primary-button">Tutup</button></form>
+    </dialog>
   </section>`;
+}
+
+export function bindCollectionDetails(root) {
+  root.addEventListener('click', event => {
+    const button = event.target.closest('[data-collection]');
+    if (!button) return;
+    const dialog = root.querySelector('.collection-dialog');
+    if (!dialog) return;
+    const bucket = button.dataset.collection;
+    const labels = ['Semua keterlambatan','1–30 hari','31–60 hari','61–90 hari','Lebih dari 90 hari'];
+    dialog.querySelector('.collection-filter-label').textContent = labels[bucket === 'all' ? 0 : Number(bucket)];
+    let shown = 0;
+    dialog.querySelectorAll('[data-collection-bucket]').forEach(row => {
+      row.hidden = bucket !== 'all' && row.dataset.collectionBucket !== bucket;
+      if (!row.hidden) shown++;
+    });
+    dialog.querySelector('.collection-empty').hidden = shown > 0;
+    dialog.querySelector('.collection-selected-total').textContent = button.querySelector('strong')?.textContent ?? button.textContent.split('·').pop().trim();
+    dialog.showModal();
+  });
 }
 
 function salesChart(store,today) {
@@ -104,6 +134,7 @@ function progressChart(label, numerator, denominator) {
 }
 
 export function mountDashboardAnalytics(root) {
+  bindCollectionDetails(root);
   function render(){
     try {
       const today = salesOrderDate();
