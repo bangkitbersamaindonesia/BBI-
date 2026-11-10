@@ -70,7 +70,7 @@ export function collectionPanel(store, today) {
       <div class="table-scroll"><table><thead><tr><th>Nama toko / customer</th><th>Invoice</th><th>Jatuh tempo</th><th>Terlambat</th><th>Sisa tagihan</th></tr></thead>
       <tbody>${arAgingSummary(store,today).rows.flatMap(customer=>customer.documents
         .filter(invoice=>invoice.hasDue && invoice.bucket>0 && invoice.amount>0n)
-        .map(invoice=>`<tr data-collection-bucket="${invoice.bucket}"><td>${esc(customer.name)}</td><td>${esc(invoice.id)}</td><td>${esc(invoice.baseDate)}</td><td>${invoice.days} hari</td><td>${money(invoice.amount)}</td></tr>`)).join('')}</tbody></table></div>
+        .map(invoice=>`<tr data-collection-monthly="${invoice.baseDate.startsWith(today.slice(0,7))}" data-collection-bucket="${invoice.bucket}"><td>${esc(customer.name)}</td><td>${esc(invoice.id)}</td><td>${esc(invoice.baseDate)}</td><td>${invoice.days} hari</td><td>${money(invoice.amount)}</td></tr>`)).join('')}</tbody></table></div>
       <p class="collection-empty" hidden>Tidak ada tagihan dalam kelompok ini.</p>
       <p>Total <strong class="collection-selected-total"></strong></p>
       <form method="dialog"><button class="primary-button">Tutup</button></form>
@@ -86,10 +86,10 @@ export function bindCollectionDetails(root) {
     if (!dialog) return;
     const bucket = button.dataset.collection;
     const labels = ['Semua keterlambatan','1–30 hari','31–60 hari','61–90 hari','Lebih dari 90 hari'];
-    dialog.querySelector('.collection-filter-label').textContent = labels[bucket === 'all' ? 0 : Number(bucket)];
+    dialog.querySelector('.collection-filter-label').textContent = bucket === 'month' ? 'Jatuh tempo bulan ini sampai tanggal laporan' : labels[bucket === 'all' ? 0 : Number(bucket)];
     let shown = 0;
     dialog.querySelectorAll('[data-collection-bucket]').forEach(row => {
-      row.hidden = bucket !== 'all' && row.dataset.collectionBucket !== bucket;
+      row.hidden = bucket === 'month' ? row.dataset.collectionMonthly !== 'true' : bucket !== 'all' && row.dataset.collectionBucket !== bucket;
       if (!row.hidden) shown++;
     });
     dialog.querySelector('.collection-empty').hidden = shown > 0;
@@ -154,11 +154,11 @@ export function mountDashboardAnalytics(root) {
         ...demoStore.payments.map(p=>({label:p.type==='customer'?'Pembayaran customer':'Pembayaran vendor',detail:p.sourceId+' · '+money(BigInt(p.amount)),at:p.at ?? p.date})),
       ].filter(row=>row.at).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,6);
       root.innerHTML = `<section class="stats" aria-label="Ringkasan indikator bisnis">
-        ${stats.map(([label,value,note,tone,icon])=>`<article class="stat"><div class="stat-top"><span>${label}</span><span class="stat-icon ${tone}">${icon}</span></div>
+        ${stats.map(([label,value,note,tone,icon])=>`<${icon==='↙'?'button type="button" data-collection="month"':'article'} class="stat ${icon==='↙'?'collection-card':''}"><div class="stat-top"><span>${label}</span><span class="stat-icon ${tone}">${icon}</span></div>
         <strong>${value===null?'—':money(value)}</strong><div class="stat-foot">${value===null?'HPP invoice belum lengkap':note}</div>
         ${tone==='blue' && icon==='↗' ? progressChart('Perubahan vs. bulan lalu',summary.sales-summary.previousSales,summary.previousSales) : ''}
         ${icon==='↙' ? progressChart('Belum dibayar · invoice jatuh tempo bulan ini',summary.receivables,summary.receivablesDue) : ''}
-        ${tone==='purple' ? progressChart('Belum dibayar · bills jatuh tempo bulan ini',summary.dueUnpaid,summary.dueTotal) : ''}</article>`).join('')}</section>
+        ${tone==='purple' ? progressChart('Belum dibayar · bills jatuh tempo bulan ini',summary.dueUnpaid,summary.dueTotal) : ''}</${icon==='↙'?'button':'article'}>`).join('')}</section>
         ${summary.missingDueDates ? `<p class="sku-guidance">${summary.missingDueDates} dokumen belum memiliki jatuh tempo dan dikecualikan dari indikator jatuh tempo.</p>` : ''}
         ${collectionPanel(demoStore,today)}
         ${salesChart(demoStore,today)}
