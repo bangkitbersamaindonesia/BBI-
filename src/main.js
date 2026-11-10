@@ -33,7 +33,7 @@ const nav = [
   { icon:"◉", label:"Sales" },
   { icon:"♧", label:"Customer Center" },
   { icon:"◇", label:"Vendor Center" },
-  { icon:"▦", label:"Sales Tools" },
+  { icon:"▦", label:"SKU Center" },
   { icon:"↔", label:"Payments" },
   { icon:"▤", label:"Accounting" },
   { icon:"▥", label:"Reports" },
@@ -86,7 +86,7 @@ function setPage(page){
   const isSalesReport=page==='Sales Report';document.querySelector('#sales-report-content').hidden=!isSalesReport;
   const isVendorCenter=page==='Vendor Center';document.querySelector('#vendor-center-content').hidden=!isVendorCenter;
   const isCustomerCenter=page==='Customer Center';document.querySelector('#customer-center-content').hidden=!isCustomerCenter;
-  const isSalesTools=page==='Sales Tools';document.querySelector("#sales-tools-content").hidden=!isSalesTools;
+  const isSalesTools=page==='SKU Center';document.querySelector("#sales-tools-content").hidden=!isSalesTools;
   const isDashboard=page==="Dashboard";
   const isUsers=page==="Users";
   document.querySelector("#users-content").hidden=!isUsers;

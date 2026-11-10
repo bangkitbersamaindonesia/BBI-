@@ -14,13 +14,13 @@ export function mountSalesTools(root, user, openProductManager) {
     store.users.some(row => row.id === user.id && row.active && row.role === 'superadmin');
 
   root.innerHTML = `<section class="panel">
-    <nav class="cc-tabs" aria-label="Halaman Sales Tools">
+    <nav class="cc-tabs" aria-label="Halaman SKU Center">
       <button type="button" data-catalog-page="catalog">Katalog Produk</button>
       <button type="button" data-catalog-page="arrivals">Barang Baru Datang</button>
     </nav>
     ${canManageProducts(store,user)?'<div style="padding:16px"><button type="button" class="secondary-button" data-manage-catalog>Kelola SKU · Tambah / Edit / Delete</button></div>':''}
     <div class="panel-head"><div>
-      <h2 class="catalog-title">Sales Tools · Katalog Produk</h2>
+      <h2 class="catalog-title">SKU Center · Katalog Produk</h2>
       <p>Foto produk, nama / kode SKU, size, warna dan harga jual per pcs.</p>
       ${canSelect ? '<p>Pilih checkbox SKU untuk menampilkannya di Barang Baru Datang.</p>' : ''}
     </div><label>Cari produk<input type="search" id="catalog-search" placeholder="Nama, SKU, size, warna…"></label></div>
@@ -33,7 +33,7 @@ export function mountSalesTools(root, user, openProductManager) {
     const products = salesCatalog(store.products, search.value)
       .filter(product => page !== 'arrivals' || selected.has(product.sku));
     root.querySelector('.catalog-title').textContent =
-      page === 'arrivals' ? 'Sales Tools · Barang Baru Datang' : 'Sales Tools · Katalog Produk';
+      page === 'arrivals' ? 'SKU Center · Barang Baru Datang' : 'SKU Center · Katalog Produk';
     root.querySelectorAll('[data-catalog-page]').forEach(button => {
       const active = button.dataset.catalogPage === page;
       button.classList.toggle('active', active);
