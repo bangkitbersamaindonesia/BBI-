@@ -18,6 +18,12 @@ import { mountDashboardAnalytics } from "./dashboard-analytics.js";
 
 function renderWorkspace(){
 clearDemoSubscriptions();
+const loginUrl = new URL(window.location.href);
+if (loginUrl.searchParams.has('logout')) {
+ sessionStorage.removeItem('bbi-demo-user');
+ loginUrl.searchParams.delete('logout');
+ history.replaceState(null, '', loginUrl.pathname + loginUrl.search + loginUrl.hash);
+}
 const selectedUser=workspaceStore.users.find(u=>u.id===sessionStorage.getItem('bbi-demo-user')&&u.active);
 const nav = [
   { icon:"▦", label:"Dashboard" },
@@ -150,7 +156,7 @@ const checksRoot=document.createElement("div");document.querySelector("#payments
  setPage(defaultWorkspacePage(selectedUser));
 }else{
  document.querySelector('.shell').hidden=true;
- const chooser=document.createElement('section');chooser.className='panel workspace-user-chooser';chooser.innerHTML='<h1>BBI Workspace</h1><p>Pilih user untuk simulasi akses. Ini belum merupakan login terautentikasi.</p><label>User demo<select id="workspace-user">'+workspaceStore.users.map(u=>'<option value="'+u.id+'">'+u.name+' · '+u.role+'</option>').join('')+'</select></label><button type="button" class="primary-button">Buka workspace demo</button>';app.append(chooser);chooser.querySelector('button').onclick=()=>{sessionStorage.setItem('bbi-demo-user',chooser.querySelector('select').value);renderWorkspace();};
+ const chooser=document.createElement('section');chooser.className='panel workspace-user-chooser';chooser.innerHTML='<h1>Login BBI</h1><p>Pilih user untuk masuk ke workspace demo.</p><label>User demo<select id="workspace-user">'+workspaceStore.users.map(u=>'<option value="'+u.id+'">'+u.name+' · '+u.role+'</option>').join('')+'</select></label><button type="button" class="primary-button">Masuk</button>';app.append(chooser);chooser.querySelector('button').onclick=()=>{sessionStorage.setItem('bbi-demo-user',chooser.querySelector('select').value);renderWorkspace();};
 }
 
 }
