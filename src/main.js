@@ -45,7 +45,7 @@ const app = document.querySelector("#app");document.querySelector("#invoice-prev
 function icon(name){return '<span class="icon" aria-hidden="true">'+name+'</span>';}
 function menuItem(item,index){return '<button class="nav-item '+(index===0?'active':'')+'" type="button" data-page="'+item.label+'">'+icon(item.icon)+'<span>'+(item.label==='Sales'?'Sales Order':item.label)+'</span>'+'</button>';}
 app.innerHTML = `
-<div class="shell">
+<div class="shell ${selectedUser?.role==='sales'?'sales-mobile':''}">
   <aside class="sidebar" id="sidebar">
     <a href="#" class="logo" aria-label="BBI ERP beranda"><span class="logo-mark">B</span><span><strong>BBI ERP</strong><small>Business management</small></span></a>
     <p class="sidebar-label">WORKSPACE</p>
@@ -56,7 +56,7 @@ app.innerHTML = `
   <div class="main-area">
     <header class="topbar">
       <div class="top-left"><button type="button" class="menu-toggle" id="menu-toggle" aria-label="Buka atau tutup menu" aria-expanded="false">☰</button><span class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb-active">Dashboard</strong></span></div>
-      <div class="top-actions"><span class="demo-indicator">● Demo data</span><button type="button" class="icon-button" title="Notifikasi" aria-label="Notifikasi">♧</button><span class="avatar top-avatar">AD</span></div>
+      <div class="top-actions">${selectedUser?.role==='sales' ? `<span class="sales-mobile-name">${selectedUser.name}</span><button type="button" class="secondary-button" id="sales-mobile-logout">Logout</button>` : ''}<span class="demo-indicator">● Demo data</span><button type="button" class="icon-button" title="Notifikasi" aria-label="Notifikasi">♧</button><span class="avatar top-avatar">AD</span></div>
     </header>
     <main class="content">
       <div class="heading"><div><span class="eyebrow">OVERVIEW</span><h1 id="page-title">Dashboard</h1><p id="page-subtitle">Selamat datang di BBI ERP. Berikut ringkasan operasional bisnis Anda.</p></div><div class="heading-actions"><span class="date-chip">▦ ${format.format(new Date())}</span><button class="primary-button" id="report-button" type="button">↗ <span>Lihat Laporan</span></button></div></div>
@@ -154,6 +154,7 @@ const checksRoot=document.createElement("div");document.querySelector("#payments
  mountSalesTools(document.querySelector('#sales-tools-content'),selectedUser,()=>setPage('Inventory'));
  document.querySelector('#report-button').hidden=!canAccessPage(selectedUser,'Reports');
  document.querySelector('#workspace-signout').onclick=logoutWorkspace;
+ document.querySelector('#sales-mobile-logout')?.addEventListener('click',logoutWorkspace);
  setPage(defaultWorkspacePage(selectedUser));
 }else{
  document.querySelector('.shell').hidden=true;

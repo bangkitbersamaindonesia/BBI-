@@ -142,3 +142,77 @@ body.invoice-preview-open{overflow:auto}body.invoice-preview-open .shell{display
 .customer-documents figcaption{font-size:12px;font-weight:700;margin-bottom:8px}
 .customer-documents img{max-width:160px;max-height:110px;object-fit:contain;border:1px solid #dbe2ec;border-radius:6px}
 .customer-documents p{font-size:12px;color:#78869a}
+
+/* Sales workspace uses a phone layout at every viewport width. */
+.sales-mobile{display:block;max-width:600px;margin:0 auto;min-height:100dvh;background:#f6f8fc}
+.sales-mobile .main-area{width:100%}
+.sales-mobile .sidebar{position:fixed;inset:auto 0 0;width:min(600px,100%);margin:auto;height:auto;padding:8px 5px calc(8px + env(safe-area-inset-bottom));background:#fff;border:1px solid #e1e8f1;border-radius:18px 18px 0 0;transform:none;z-index:20;overflow:visible}
+.sales-mobile .sidebar>.logo,.sales-mobile .sidebar-label,.sales-mobile .sidebar-bottom,.sales-mobile .profile{display:none}
+.sales-mobile .sidebar nav{display:flex;gap:2px;justify-content:space-around}
+.sales-mobile .sidebar .nav-item{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding:7px 2px;text-align:center;justify-content:flex-start;font-size:10px;line-height:1.3;min-height:55px}
+.sales-mobile .sidebar .icon{font-size:20px;height:23px}
+.sales-mobile .topbar{height:64px;padding:10px 16px;position:sticky;top:0;z-index:10;gap:8px}
+.sales-mobile .menu-toggle,.sales-mobile .breadcrumb,.sales-mobile .top-avatar,.sales-mobile .icon-button,.sales-mobile .demo-indicator{display:none}
+.sales-mobile .top-left::after{content:"BBI · Sales";font-weight:800;font-size:17px;color:#285ec9}
+.sales-mobile .top-actions{gap:10px}
+.sales-mobile .sales-mobile-name{font-size:13px;font-weight:700}
+.sales-mobile .content{padding:18px 12px 115px;width:100%;max-width:none}
+.sales-mobile .heading{display:block;margin-bottom:18px}
+.sales-mobile h1{font-size:24px}
+.sales-mobile .heading-actions{margin-top:12px}
+.sales-mobile .heading .date-chip{padding:7px 10px}
+.sales-mobile .panel{padding:15px;min-width:0}
+.sales-mobile .panel-head{padding:0;display:flex;flex-direction:column;align-items:stretch;gap:14px;margin-bottom:16px}
+.sales-mobile .sku-form-grid,.sales-mobile .cc-form-grid,.sales-mobile .cc-information-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.sales-mobile label{font-size:13px;line-height:1.5}
+.sales-mobile input,.sales-mobile select,.sales-mobile textarea{font-size:16px!important;max-width:100%;box-sizing:border-box}
+.sales-mobile input:not([type=checkbox]),.sales-mobile select{min-height:46px}
+.sales-mobile button{min-height:44px;touch-action:manipulation}
+.sales-mobile .primary-button,.sales-mobile .secondary-button{font-size:13px}
+.sales-mobile .sales-catalog{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sales-mobile .catalog-image{height:165px}
+.sales-mobile .catalog-body{padding:12px}
+.sales-mobile .catalog-body h3{font-size:14px;overflow-wrap:anywhere}
+.sales-mobile .catalog-body strong{font-size:13px}
+.sales-mobile .catalog-body p{overflow-wrap:anywhere}
+.sales-mobile .catalog-thumbnails button{min-width:44px}
+.sales-mobile .cc-tabs{padding:0;gap:0}
+.sales-mobile .cc-tabs button{flex:1;padding:12px 6px;font-size:13px}
+.sales-mobile .so-toolbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.sales-mobile .so-toolbar button{padding:9px 4px}
+.sales-mobile .so-grid table,.sales-mobile .so-grid tbody,.sales-mobile .so-grid tr,.sales-mobile .so-grid td{display:block;width:100%;min-width:0;max-width:100%}
+.sales-mobile .so-grid thead{display:none}
+.sales-mobile .so-grid tr{padding:12px;border:1px solid #dce5f0;border-radius:12px;margin:0 0 14px;background:#f8faff}
+.sales-mobile .so-grid td{padding:6px 0;border:0;white-space:normal;text-align:left}
+.sales-mobile .so-grid td:nth-child(1)::before{content:"SKU"}
+.sales-mobile .so-grid td:nth-child(2)::before{content:"Deskripsi barang"}
+.sales-mobile .so-grid td:nth-child(3)::before{content:"Jumlah"}
+.sales-mobile .so-grid td:nth-child(4)::before{content:"Satuan"}
+.sales-mobile .so-grid td:nth-child(6)::before{content:"Subtotal"}
+.sales-mobile .so-grid td::before{display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:4px}
+.sales-mobile .so-grid .line-sku{max-width:none}
+.sales-mobile .so-grid .line-description{min-width:0}
+.sales-mobile .so-grid .line-price-label{font-size:13px}
+.sales-mobile .so-grid .remove-so-line{width:100%}
+.sales-mobile .customer-center{grid-template-columns:minmax(0,1fr)}
+.sales-mobile .customer-directory .table-scroll{max-height:230px}
+.sales-mobile .cc-list-filters{padding:0;margin-bottom:12px}
+.sales-mobile .cc-information-grid{padding:0}
+.sales-mobile .cc-information-grid dl{grid-template-columns:minmax(0,1fr);gap:5px;margin:0}
+.sales-mobile .cc-information-grid dd{margin-bottom:12px}
+.sales-mobile .cc-note{grid-column:auto}
+.sales-mobile .customer-documents{padding:0}
+.sales-mobile .cc-transaction-filters{display:grid;grid-template-columns:1fr}
+.sales-mobile .cc-transaction-filters label{min-width:0}
+.sales-mobile .so-document dl{grid-template-columns:minmax(0,1fr);gap:5px}
+.sales-mobile .so-document dd{margin-bottom:9px}
+.sales-mobile .table-scroll{max-width:100%;overflow-x:auto}
+.sales-mobile .demo-banner{font-size:12px}
+.sales-mobile .footer{display:block;font-size:10px}
+.sales-mobile .footer span{display:block;margin-top:5px}
+.sales-mobile dialog{width:min(560px,96vw);max-width:96vw;max-height:90dvh;padding:18px;border-radius:14px;border:1px solid #dce5f0;overflow:auto}
+.sales-mobile dialog .cc-form-grid{grid-template-columns:minmax(0,1fr)}
+.sales-mobile #cc-detail{padding:12px 0}
+@media(max-width:350px){.sales-mobile .sales-catalog{grid-template-columns:minmax(0,1fr)}}
+.sales-mobile .panel-head>label{display:grid;gap:6px;width:100%}
+.sales-mobile .panel-head>label input{width:100%;padding:11px;border:1px solid #dce5f0;border-radius:8px}
