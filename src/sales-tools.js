@@ -1,3 +1,4 @@
+import {canManageProducts} from './product-management.js';
 import {demoStore as store, subscribeDemo, notifyDemo} from './demo-store.js';
 import {salesCatalog} from './workspace-access.js';
 import {selectNewArrival} from './new-arrivals-model.js';
@@ -7,7 +8,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, char => (
 ));
 const money = value => 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
 
-export function mountSalesTools(root, user) {
+export function mountSalesTools(root, user, openProductManager) {
   let page = 'catalog';
   const canSelect = user?.role === 'superadmin' &&
     store.users.some(row => row.id === user.id && row.active && row.role === 'superadmin');
@@ -17,6 +18,7 @@ export function mountSalesTools(root, user) {
       <button type="button" data-catalog-page="catalog">Katalog Produk</button>
       <button type="button" data-catalog-page="arrivals">Barang Baru Datang</button>
     </nav>
+    ${canManageProducts(store,user)?'<div style="padding:16px"><button type="button" class="secondary-button" data-manage-catalog>Kelola SKU · Tambah / Edit / Delete</button></div>':''}
     <div class="panel-head"><div>
       <h2 class="catalog-title">Sales Tools · Katalog Produk</h2>
       <p>Foto produk, nama / kode SKU, size, warna dan harga jual per pcs.</p>
@@ -60,6 +62,7 @@ export function mountSalesTools(root, user) {
         ? 'Belum ada barang baru datang yang dipilih Admin super atau sesuai pencarian.'
         : 'Tidak ada produk yang sesuai.'}</p>`;
   }
+  root.querySelector('[data-manage-catalog]')?.addEventListener('click',()=>{if(canManageProducts(store,user))openProductManager?.();});
   search.addEventListener('input', render);
   root.addEventListener('click', event => {
     const tab = event.target.closest('[data-catalog-page]');
