@@ -108,6 +108,11 @@ mobileToggle.addEventListener("click",()=>{const open=sidebar.classList.toggle("
 document.querySelector("#back-dashboard").addEventListener("click",()=>setPage("Dashboard"));
 document.querySelector("#report-button").addEventListener("click",()=>setPage("Reports"));
 
+function logoutWorkspace() {
+ sessionStorage.removeItem('bbi-demo-user');
+ renderWorkspace();
+}
+
 if(selectedUser){
  mountWorkflowHome(document.querySelector('#workflow-home'),selectedUser,(page,target)=>{
   setPage(page);
@@ -117,7 +122,7 @@ if(selectedUser){
  if(selectedUser.role!=='sales'){
 if(canAccessPage(selectedUser,'Vendor Center'))mountVendorCenter(document.querySelector('#vendor-center-content'));
 if(canAccessPage(selectedUser,'Customer Center'))mountCustomerCenter(document.querySelector('#customer-center-content'));
-if(canAccessPage(selectedUser,'Dashboard'))mountDashboardAnalytics(dashboard);
+if(canAccessPage(selectedUser,'Dashboard'))mountDashboardAnalytics(dashboard, logoutWorkspace);
 else dashboard.replaceChildren();
 
 
@@ -141,7 +146,7 @@ const checksRoot=document.createElement("div");document.querySelector("#payments
  if(selectedUser.role==='sales')mountSales(document.querySelector('#sales-content'),document.querySelector('#purchasing-content'),selectedUser);
  mountSalesTools(document.querySelector('#sales-tools-content'));
  document.querySelector('#report-button').hidden=!canAccessPage(selectedUser,'Reports');
- document.querySelector('#workspace-signout').onclick=()=>{sessionStorage.removeItem('bbi-demo-user');renderWorkspace();};
+ document.querySelector('#workspace-signout').onclick=logoutWorkspace;
  setPage(defaultWorkspacePage(selectedUser));
 }else{
  document.querySelector('.shell').hidden=true;

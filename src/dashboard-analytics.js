@@ -133,7 +133,10 @@ function progressChart(label, numerator, denominator) {
     <div class="dashboard-meter ${ratio<0?'down':''}" aria-hidden="true"><span style="width:${Math.min(Math.abs(ratio),100)}%"></span></div></div>`;
 }
 
-export function mountDashboardAnalytics(root) {
+export function mountDashboardAnalytics(root, onLogout) {
+  root.addEventListener('click', event => {
+    if(event.target.closest('[data-dashboard-logout]'))onLogout?.();
+  });
   bindCollectionDetails(root);
   function render(){
     try {
@@ -153,7 +156,7 @@ export function mountDashboardAnalytics(root) {
         ...demoStore.bills.map(b=>({label:'Tagihan vendor dicatat',detail:b.id+' · '+b.supplier,at:b.at ?? b.date})),
         ...demoStore.payments.map(p=>({label:p.type==='customer'?'Pembayaran customer':'Pembayaran vendor',detail:p.sourceId+' · '+money(BigInt(p.amount)),at:p.at ?? p.date})),
       ].filter(row=>row.at).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,6);
-      root.innerHTML = `<section class="stats" aria-label="Ringkasan indikator bisnis">
+      root.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button type="button" class="secondary-button" data-dashboard-logout>Logout</button></div><section class="stats" aria-label="Ringkasan indikator bisnis">
         ${stats.map(([label,value,note,tone,icon])=>`<${icon==='↙'?'button type="button" data-collection="month"':'article'} class="stat ${icon==='↙'?'collection-card':''}"><div class="stat-top"><span>${label}</span><span class="stat-icon ${tone}">${icon}</span></div>
         <strong>${value===null?'—':money(value)}</strong><div class="stat-foot">${value===null?'HPP invoice belum lengkap':note}</div>
         ${tone==='blue' && icon==='↗' ? progressChart('Perubahan vs. bulan lalu',summary.sales-summary.previousSales,summary.previousSales) : ''}
