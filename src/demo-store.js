@@ -23,6 +23,7 @@ export const demoStore = {
     {name:'Vendor Demo Sandang',terms:'Net 30',address:'Alamat vendor contoh, Bandung',active:true},
     {name:'Vendor Demo Tekstil',terms:'Net 14',address:'Alamat vendor contoh, Surabaya',active:true},
   ],
+  newArrivalSkus: [],
   payments: [], writeOffs: [], checks: [],
   orders: [], purchaseOrders: [], reservations: [], responses: [], bills: [], lossSales: [], receipts: [], shipments: [], invoices: [], recoveries: [], movements: [], returns: [], credits: [], costPools: {},
 };

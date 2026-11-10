@@ -135,3 +135,5 @@ body.invoice-preview-open{overflow:auto}body.invoice-preview-open .shell{display
 .collection-dialog table{width:100%;min-width:650px}
 .collection-dialog td,.collection-dialog th{padding:10px;text-align:left}
 .collection-dialog tr[hidden]{display:none!important}
+.cc-tabs button.active{color:#3166d7;border-bottom:3px solid #3166d7;font-weight:700}
+.new-arrival-choice{display:flex;gap:8px;align-items:center;margin-top:14px;font-size:12px}

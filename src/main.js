@@ -151,7 +151,7 @@ const checksRoot=document.createElement("div");document.querySelector("#payments
 
  }
  if(selectedUser.role==='sales')mountSales(document.querySelector('#sales-content'),document.querySelector('#purchasing-content'),selectedUser);
- mountSalesTools(document.querySelector('#sales-tools-content'));
+ mountSalesTools(document.querySelector('#sales-tools-content'),selectedUser);
  document.querySelector('#report-button').hidden=!canAccessPage(selectedUser,'Reports');
  document.querySelector('#workspace-signout').onclick=logoutWorkspace;
  setPage(defaultWorkspacePage(selectedUser));
