@@ -137,3 +137,8 @@ body.invoice-preview-open{overflow:auto}body.invoice-preview-open .shell{display
 .collection-dialog tr[hidden]{display:none!important}
 .cc-tabs button.active{color:#3166d7;border-bottom:3px solid #3166d7;font-weight:700}
 .new-arrival-choice{display:flex;gap:8px;align-items:center;margin-top:14px;font-size:12px}
+.customer-documents{display:flex;flex-wrap:wrap;gap:16px;padding:0 22px}
+.customer-documents figure{margin:0;min-width:160px}
+.customer-documents figcaption{font-size:12px;font-weight:700;margin-bottom:8px}
+.customer-documents img{max-width:160px;max-height:110px;object-fit:contain;border:1px solid #dbe2ec;border-radius:6px}
+.customer-documents p{font-size:12px;color:#78869a}

@@ -34,6 +34,16 @@ export function saveCustomer(store,input,originalName=null,user=null){
  if(row.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email))throw Error('Format email tidak valid.');
  const key=customerKey(name);store.customers??=[];const index=store.customers.findIndex(c=>customerKey(c.name)===key);
  if(!originalName&&customerDirectory(store).some(c=>customerKey(c.name)===key))throw Error('Customer sudah ada. Pilih customer lalu edit informasinya.');
+ if(input.documentPhotos!==undefined){
+  row.documentPhotos={};
+  for(const key of ['ktp','npwp','storefront']){
+   const photo=input.documentPhotos?.[key];
+   if(photo){
+    if(typeof photo.src!=='string'||!photo.src.startsWith('blob:')||!Number.isInteger(photo.bytes)||photo.bytes<=0||photo.bytes>300*1024||photo.width>1200||photo.height>1200)throw Error('Foto customer tidak valid atau melebihi batas ukuran.');
+    row.documentPhotos[key]={...photo};
+   }
+  }
+ }else if(index>=0)row.documentPhotos=store.customers[index].documentPhotos;
  if(index>=0){
   if(input.email === undefined)row.email=store.customers[index].email ?? '';
   store.customers[index]=row;

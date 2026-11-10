@@ -21,3 +21,16 @@ test('Named Sales can view and edit only assigned customers and cannot reassign 
  assert.equal(s.customers.find(c=>c.name==='Toko baru').salesperson,'Doni');
  assert.deepEqual(customerDirectory(s,other).map(c=>c.name),['Toko L']);
 });
+
+test('Customer document photos persist across metadata edits and follow salesperson ownership',()=>{
+ const user={id:'d',name:'Doni',role:'sales',active:true};
+ const s=store();s.users=[user];s.customers=[{name:'Toko A',salesperson:'Doni'}];
+ const photo={src:'blob:test',bytes:100,width:100,height:100};
+ saveCustomer(s,{name:'Toko A',documentPhotos:{ktp:photo,npwp:photo,storefront:photo}},'Toko A',user);
+ assert.equal(Object.keys(s.customers[0].documentPhotos).length,3);
+ saveCustomer(s,{name:'Toko A',contact:'Baru'},'Toko A',user);
+ assert.equal(s.customers[0].documentPhotos.ktp.src,'blob:test');
+ assert.throws(()=>saveCustomer(s,{name:'Toko A',documentPhotos:{ktp:{...photo,bytes:400000}}},'Toko A',user));
+ saveCustomer(s,{name:'Toko A',documentPhotos:{}},'Toko A',user);
+ assert.deepEqual(s.customers[0].documentPhotos,{});
+});
