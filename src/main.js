@@ -22,7 +22,7 @@ const loginUrl = new URL(window.location.href);
 if (loginUrl.searchParams.has('logout')) {
  sessionStorage.removeItem('bbi-demo-user');
  loginUrl.searchParams.delete('logout');
- history.replaceState(null, '', loginUrl.pathname + loginUrl.search + loginUrl.hash);
+ history.replaceState(null, '', loginUrl.pathname);
 }
 const selectedUser=workspaceStore.users.find(u=>u.id===sessionStorage.getItem('bbi-demo-user')&&u.active);
 const nav = [
@@ -51,7 +51,7 @@ app.innerHTML = `
     <p class="sidebar-label">WORKSPACE</p>
     <nav aria-label="Navigasi utama">${nav.filter(item=>selectedUser&&canAccessPage(selectedUser,item.label)).map(menuItem).join("")}</nav>
     <div class="sidebar-bottom"><div class="help-symbol">?</div><div><strong>Butuh bantuan?</strong><small>Sistem dalam pengembangan</small></div></div>
-    <div class="profile"><span class="avatar">AD</span><div><strong>${selectedUser?.name??'Pilih user'}</strong><small>${selectedUser?.role??'Demo akses workspace'}</small></div><button type="button" class="secondary-button" id="workspace-signout">Keluar</button></div>
+    <div class="profile"><span class="avatar">AD</span><div><strong>${selectedUser?.name??'Pilih user'}</strong><small>${selectedUser?.role??'Demo akses workspace'}</small></div><button type="button" class="secondary-button" id="workspace-signout">Logout</button></div>
   </aside>
   <div class="main-area">
     <header class="topbar">
@@ -116,7 +116,10 @@ document.querySelector("#report-button").addEventListener("click",()=>setPage("R
 
 function logoutWorkspace() {
  sessionStorage.removeItem('bbi-demo-user');
+ history.replaceState(null, '', window.location.pathname);
  renderWorkspace();
+ window.scrollTo(0, 0);
+ document.querySelector('#workspace-user')?.focus();
 }
 
 if(selectedUser){
