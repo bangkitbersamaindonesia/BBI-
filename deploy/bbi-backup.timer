@@ -1,0 +1,7 @@
+[Unit]
+Description=Daily BBI database backup
+[Timer]
+OnCalendar=*-*-* 02:00:00 Asia/Jakarta
+Persistent=true
+[Install]
+WantedBy=timers.target

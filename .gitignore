@@ -1,6 +1,10 @@
-node_modules/
-dist/
+
+# Private production state and credentials
+data/
+backups/
+*.sqlite
+*.sqlite-*
 .env
 .env.*
-!.env.example
-.DS_Store
+!*.env.example
+*credentials*.json

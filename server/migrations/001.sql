@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS state(id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, body TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, name TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('sales','admin1','admin2','admin3','superadmin')), password_hash TEXT NOT NULL, email TEXT UNIQUE, active INTEGER NOT NULL DEFAULT 1, version INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), csrf TEXT NOT NULL, expires INTEGER NOT NULL, user_version INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS attempts(key TEXT PRIMARY KEY, failures INTEGER NOT NULL, reset_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS requests(user_id TEXT NOT NULL REFERENCES users(id), request_id TEXT NOT NULL, fingerprint TEXT NOT NULL, response TEXT NOT NULL, PRIMARY KEY(user_id,request_id));
+CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, revision INTEGER, before_hash TEXT NOT NULL, after_hash TEXT NOT NULL, previous_hash TEXT NOT NULL, hash TEXT NOT NULL);
+CREATE TRIGGER IF NOT EXISTS audit_no_update BEFORE UPDATE ON audit BEGIN SELECT RAISE(ABORT,'Audit is append-only'); END;
+CREATE TRIGGER IF NOT EXISTS audit_no_delete BEFORE DELETE ON audit BEGIN SELECT RAISE(ABORT,'Audit is append-only'); END;
+CREATE TABLE IF NOT EXISTS attachments(id TEXT PRIMARY KEY, owner_type TEXT NOT NULL CHECK(owner_type IN ('product','customer')), owner_id TEXT NOT NULL, slot TEXT NOT NULL, mime TEXT NOT NULL, body BLOB NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(owner_type,owner_id,slot));
+CREATE TABLE IF NOT EXISTS journals(source TEXT PRIMARY KEY, date TEXT NOT NULL, body TEXT NOT NULL);
+CREATE TRIGGER IF NOT EXISTS journals_no_update BEFORE UPDATE ON journals BEGIN SELECT RAISE(ABORT,'Journals are append-only'); END;
+CREATE TRIGGER IF NOT EXISTS journals_no_delete BEFORE DELETE ON journals BEGIN SELECT RAISE(ABORT,'Journals are append-only'); END;

@@ -1,0 +1,21 @@
+[Unit]
+Description=BBI ERP application server
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=simple
+User=bbi
+Group=bbi
+WorkingDirectory=/opt/bbi
+EnvironmentFile=/etc/bbi/bbi.env
+ExecStart=/usr/bin/node /opt/bbi/server/start.mjs
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/bbi
+[Install]
+WantedBy=multi-user.target

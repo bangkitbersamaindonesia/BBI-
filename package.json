@@ -7,10 +7,17 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "test": "node --test",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server/start.mjs",
+    "test:server": "node --test server/*.test.mjs",
+    "user": "node server/manage.mjs user",
+    "backup": "node server/manage.mjs backup",
+    "verify:backup": "node server/manage.mjs verify"
   },
   "devDependencies": {
     "vite": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=24.0.0 <25"
   }
 }
-

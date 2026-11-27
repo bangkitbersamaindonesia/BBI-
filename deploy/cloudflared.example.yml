@@ -1,0 +1,13 @@
+# Replace UUID and team/AUD; install cloudflared as its own OS service.
+tunnel: YOUR-TUNNEL-UUID
+credentials-file: /etc/cloudflared/YOUR-TUNNEL-UUID.json
+ingress:
+  - hostname: erp.example.com
+    service: http://127.0.0.1:5181
+    originRequest:
+      access:
+        required: true
+        teamName: YOUR-TEAM
+        audTag:
+          - YOUR-APPLICATION-AUD
+  - service: http_status:404
